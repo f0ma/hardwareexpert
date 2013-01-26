@@ -1,0 +1,199 @@
+%2micom.ru Team \ LOC TOP Write \ Запись микросхем LOC TOP
+
+var buff;
+
+def calcCrc(dataArr)
+{
+var crc = 0;
+var tmp = 0;
+var index = 0;
+var i=0;
+
+for(index = 3;index<128+3;index++)
+{
+tmp = dataArr[index];
+
+tmp = tmp << 8;
+crc = crc xor tmp;
+
+for(i=0;i<8;i++)
+{
+if(crc >= 0x8000)
+{
+crc = crc + crc;
+crc = crc xor 0x1021;
+}
+else
+{
+crc = crc << 1;
+}
+crc = crc & 0xFFFF;
+}
+
+
+}
+
+return (crc & 0xFF00)>>8, crc & 0xFF;
+
+}
+
+
+
+def waitReturn43()
+{
+while(comRecived()<1){}
+buff = comRead();
+if(buff[0]==0x43) print(".");
+else print("!");
+
+%if(buff[0]!=0x43) print("!");
+}
+
+def waitReturn06()
+{
+do
+{
+buff = comRead();
+}while(length(buff)<1);
+
+if(buff[0]==0x06)
+{
+print(".");
+}
+else
+{
+print("!");
+}
+}
+
+def init()
+{
+wait(500000);
+
+print("\nWaiting...");
+
+var s;
+
+while(1)
+{
+s = comRead();
+if(length(s)>0)
+{
+if(s[0]==0x43) break;
+}
+}
+
+print("\n\nEnter ISP\n");
+
+buff = comRead();
+print(buff);
+comWrite(fromHex("0d 0d"));
+waitReturn43();
+comWrite(fromHex("0d 0d 69 73 70 20 30 78 38 30 0d 00"));
+waitReturn43();
+comWrite(fromHex("ff 02 01 00 40 20 02 22 7a"));
+wait(200000);
+buff = comRead();
+print(buff);
+comWrite(fromHex("ff 02 01 01 40 bf 00 fe "));
+wait(200000);
+buff = comRead();
+print(buff);
+comWrite(fromHex("ff 02 03 00 40 ab 02 ea 00 00 25"));
+wait(200000);
+buff = comRead();
+print(buff);
+comWrite(fromHex("0d"));
+
+waitReturn43();
+comWrite(fromHex("0d"));
+
+waitReturn43();
+
+}
+
+def write()
+{
+var lowadr,hiadr=1;
+var adrcrc;
+var data = pageLoad();
+var ldata =length(data);
+
+data = concat (data,fromHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+
+data = concat (data,fromHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+
+
+
+var index=0;
+var tarray = ByteArray[133];
+var mindex=0;
+
+progMax(ldata);
+
+for(lowadr=1;1;lowadr++)
+{
+progValue(index);
+adrcrc = 0x100;
+
+adrcrc = adrcrc - lowadr - hiadr;
+
+tarray[0] = 1;
+tarray[1] = lowadr;
+tarray[2] = adrcrc;
+
+tarray[3] = 0;
+tarray[4] = 0;
+tarray[5] = 0;
+tarray[6] = 0;
+tarray[7] = 0;
+
+tarray[8] = 0x78;
+tarray[9] = 0xCC;
+tarray[10] = 0xC3;
+
+for(mindex =0;mindex<120  ;mindex++ , index++)
+{
+tarray[11+mindex] = data[index];
+}
+
+var crc1,crc2;
+
+(crc1,crc2) = calcCrc(tarray);
+
+tarray[131] = crc1;
+tarray[132] = crc2;
+
+
+%print(tarray);
+%do
+%{
+comWrite(tarray);
+waitReturn06();
+
+if (index >= ldata) break;
+}
+}
+
+defapi writeLocTop(): "Записать микросхему"
+{
+comOpen(BAUD_115200,PAR_NONE,DATA_8,STOP_1);
+
+
+
+comSetRts(1);
+comSetDtr(1);
+
+init();
+
+write();
+
+comWrite(fromHex("0417630d0d726526f6f740d"));
+
+comSetRts(0);
+comSetDtr(0);
+
+print("\nSuccesfully complete\n");
+
+comClose();
+}

@@ -1,0 +1,44 @@
+%Demo \ I2C Basic Demo \ Демонстрация работы с 24c16
+
+defapi read() : "Чтение 24с16"
+{
+var v = i2cOpen();
+print("Чтение...");
+var page = i2cWriteRead (0xA0,[0],2048);
+print("OK\n");
+pageStore(page,"EEPROM");
+}
+
+defapi write() : "Запись 24с16"
+{
+var v = i2cOpen();
+var page = pageLoad();
+var req;
+print("Запись...");
+progMax(2048);
+
+var i = 0;
+for(i=0;i<2048;i++)
+{
+progValue(i);
+i2cWrite(0xA0 | ((i>>8)<<1),[i,page[i]]);
+wait(3000);
+}
+
+progValue(0);
+
+print("OK\n");
+print("Верификация...");
+wait(100000);
+var t = i2cWriteRead (0xA0,[0],2048);
+%pageStore(t,"vr");
+for(i=0;i<length(page);i++)
+{
+if(page[i]!=t[i])
+{
+print("Ошибка!\n");
+return;
+}
+}
+print("OK\n");
+}

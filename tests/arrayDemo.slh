@@ -1,0 +1,38 @@
+%Demo \ Arrays Demo \ Демонстрация работы с массивами
+
+defapi arr() : "Массивы"
+{
+
+var a = fromHex(
+"000102030405060708090A0B0C0D0E0F 101112131415161718191A1B1C1D1E1F");
+
+print("a=",a,"\n");
+
+var d = copy (a);
+
+print("d=",d,"\n");
+
+print("длина d =",DEC,length(d),"\n");
+
+var s = ByteArray[32];
+
+print("s=",s,"\n");
+
+var q = fill(s,0x22,3,4);
+
+print("q=",q,"\n");
+
+print("q+s=",concat (q,s),"\n");
+
+print("529384 as array=",fromInt(529384,8),"\n");
+
+print("hello as array=",fromAscii("hello"),"\n");
+
+print("a[3..7]=",subArray(a,3,7-3),"\n");
+
+print("hello -> array -> string=",toString(fromAscii("hello")),"\n");
+
+print(load("bitDemo.slh"));
+
+}
+

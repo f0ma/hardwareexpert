@@ -1,0 +1,21 @@
+%Demo \ Progress Demo \ Демонстрация работы с индикатором прогресса
+
+defapi progDemo() : "Индикатор выполнения"
+{
+progClear ();
+
+progMax (100);
+
+var i;
+
+for(i=0;i<=100;i++)
+{
+progValue(i);
+wait(30000);
+}
+
+wait(2000000);
+
+progClear ();
+
+}

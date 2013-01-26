@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/progress">
+        <file alias="prog0.png">progress/image_0.png</file>
+        <file alias="prog1.png">progress/image_1.png</file>
+        <file alias="prog2.png">progress/image_2.png</file>
+        <file alias="prog3.png">progress/image_3.png</file>
+        <file alias="prog4.png">progress/image_4.png</file>
+        <file alias="prog5.png">progress/image_5.png</file>
+        <file alias="prog6.png">progress/image_6.png</file>
+        <file alias="prog7.png">progress/image_7.png</file>
+    </qresource>
+    <qresource prefix="/icons">
+        <file alias="icon_chip.png">icons/chip.png</file>
+    </qresource>
+</RCC>

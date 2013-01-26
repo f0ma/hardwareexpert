@@ -1,0 +1,212 @@
+%Demo \ I2C Direct LPT Demo \ Реализация I2C шины на LPT
+
+%состояние порта по умолчанию:
+var lptData = 0xff; 
+%указание пинов:
+var SCL_IN = 7,SCL_OUT = 0, SDA_IN = 6, SDA_OUT = 2;
+%задержка:
+var waitTime = 10;
+
+%Уравень пинов:
+
+def invert(val)
+{
+if (val == 0) return 1;
+else return 0;
+}
+
+def getSCL()
+{
+	var r = lptGetStat();
+	r = r >> SCL_IN;
+	r = r & 0xFF;
+	r = invert(r);
+	return r;
+}
+
+def setSCL(val)
+{
+	wait(waitTime);
+	val = invert(val);
+
+	%режим ожидания slave
+	%while( getSCL() != 0) {};
+	
+	lptData = setBit(lptData,SCL_OUT,val);
+	lptSetData(lptData);
+	wait(waitTime);
+}
+
+def setSDA(val)
+{
+	wait(waitTime);
+	val=invert(val);
+	lptData = setBit(lptData,SDA_OUT,val);
+	lptSetData(lptData);
+	wait(waitTime);
+}
+
+def getSDA()
+{
+	var r = lptGetStat();
+	r = r >> SDA_IN;
+	r = r & 0x1;
+	return r;
+}
+
+%Комманды I2C шины
+
+def S()
+{
+setSDA(1);
+setSCL(1);
+setSDA(0);
+setSCL(0);
+}
+
+def P()
+{
+setSDA(0);
+setSCL(1);
+setSDA(1);
+}
+
+def sendByte(val)
+{
+setSCL(0);
+var i;
+for(i =7;i>=0;i--)
+{
+setSDA(getBit(val,i));
+setSCL(1);
+setSCL(0);
+}
+setSDA(1);
+
+}
+
+def getByte()
+{
+var r =0;
+
+setSCL(0);
+var i;
+for(i =7;i>=0;i--)
+{
+setSCL(1);
+r = setBit(r,i,getSDA());
+setSCL(0);
+}
+wait(waitTime);
+return r;
+}
+
+%Ожидние ASK
+
+def getAsk()
+{
+setSCL(1);
+var r = getSDA();
+setSCL(0);
+setSDA(1);
+%if(r != 0)
+%{
+%print("NASK!!!\n");
+%}
+}
+
+%Датаграммы I2C шины
+
+%S Запись S Чтение P
+def lptI2cWriteRead (adr,data,size)
+{
+	var A = 0;
+	var i;
+	var r = ByteArray[size];
+
+	S();
+	sendByte(adr&0xFE);
+	getAsk();
+	for(i=0;i<length(data);i++)
+	{
+		sendByte(data[i]);
+		getAsk();
+	}
+
+	S();
+	sendByte(adr | 1);
+	getAsk();
+	progMax(size);
+
+	for(i=0;i<size;i++)
+	{
+		progValue(i);
+		r[i] = getByte();
+		if(i != size-1)setSDA(0); %если принимается последний байт выполняется условие NASK
+		getAsk();
+		setSDA(1);
+	}
+
+	P();
+	progValue(0);
+	return r;
+}
+
+%S Запись P
+def lptI2cWrite(adr,data)
+{
+	var i;
+
+	S();
+	sendByte(adr&0xFE);
+	getAsk();
+	for(i=0;i<length(data);i++)
+	{
+		sendByte(data[i]);
+		getAsk();
+	}
+	P();
+}
+
+defapi read() : "Чтение 24с16"
+{
+var v = lptOpen();
+print("Чтение...");
+var page = lptI2cWriteRead (0xA0,[0],2048);
+print("OK\n");
+pageStore(page,"EEPROM");
+}
+
+defapi write() : "Запись 24с16"
+{
+var v = i2cOpen();
+var page = pageLoad();
+var req;
+print("Запись...");
+progMax(2048);
+
+var i = 0;
+for(i=0;i<2048;i++)
+{
+progValue(i);
+lptI2cWrite(0xA0 | ((i>>8)<<1),[i,page[i]]);
+wait(3000);
+}
+
+progValue(0);
+
+print("OK\n");
+print("Верификация...");
+wait(waitTime*10);
+var t = i2cWriteRead (0xA0,[0],2048);
+%pageStore(t,"vr");
+for(i=0;i<length(page);i++)
+{
+if(page[i]!=t[i])
+{
+print("Ошибка!\n");
+return;
+}
+}
+print("OK\n");
+}

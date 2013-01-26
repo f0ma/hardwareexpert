@@ -1,0 +1,272 @@
+%2micom.ru Team \ UOC Patcher 1.1 \ Удаление таблицы сигнатур из прошивки
+
+def uoc_step_one(data)
+{
+	var i;
+	var r1 = FALSE ;
+	var r2 = FALSE ;
+	for(i=0;i< length(data)-3;i++)
+	{
+		if( data[i]==0x0B &&  data[i+1]==0x0F )
+			{
+				r1 = TRUE;
+			}
+		if( data[i]==0x54 &&  data[i+1]==0x30 &&  data[i+2]==0x4F )
+			{
+				r2 = TRUE;
+			}
+	}
+
+if((r1 == TRUE) && (r2 == TRUE)) return TRUE;
+return FALSE;
+}
+
+
+def change_sign()
+{
+var data = pageLoad();
+
+var signh = data[0x509fe]*0x100+data[0x409fe];
+var signl = data[0x509ff]*0x100+data[0x409ff];
+
+optClear();
+optOption("signh","Signature high (in hex)",signh,OPT_HEX);
+optOption("signl","Signature low (in hex)",signl,OPT_HEX);
+optDialog();
+
+if(optOption("signl") != signl || optOption("signh") != signh)
+{
+
+
+data[0x509fe] = (optOption("signh") >> 8) & 0xFF;
+data[0x409fe] = optOption("signh") & 0xFF;
+data[0x509ff] = (optOption("signl") >> 8) & 0xFF;
+data[0x409ff] = optOption("signl") & 0xFF;
+
+pageStore(data,"sign changed");
+
+}
+}
+
+def test_patch()
+{
+	var data =  pageLoad();
+	if(uoc_step_one(data) == FALSE) print("Опорные элементы не найдены, вероятно патч не требуется.\n");
+	else print("Опорные элементы для патча найдены!\n");
+}
+
+def p_mode(data)
+{
+var r = FALSE;
+var i;
+
+var boot_codes =  fromHex("0B 0F 3B 3F 7F 4F FF 0A 3A 23 27 6F 33 37 32 7F 4F 7B 6B 22 03 07 17 13 43 02 12 7A 47 53 5F");
+
+var signh = data[0x509fe]*0x100+data[0x409fe];
+var signl = data[0x509ff]*0x100+data[0x409ff];
+
+var id = (signl & 0x0f) | ((signh >> 2) & 0x30);
+
+var boot = boot_codes[id];
+
+print ("Chip boot: ", boot,"\n");
+
+var code1 = fromHex("0B 0F 3B 3F 7F 4F FF 0A 3A 23 27 6F 33 37 32 7F 4F 7B 6B 22 03 07 17 13 43 02 12 7A 47 53 5F");
+var code2 = fromHex("0B 0F 3B 0F 7F 4F 7F 0A 3A 23 27 6F 33 37 32 7F 4F 7B 6B 22 03 07 17 13 43 02 12 7A 47 53 5F");
+var code3 = fromHex("0B 0F 3B 3F 7F 4F 7F 0A 3A 23 27 6F 33 37 32 7F 4F 7B 6B 22");
+var code4 = fromHex("0B 0F 1B 1F 5F");
+var code5 = fromHex("0B 0F 3B 3F 7F 4F");
+
+var j;
+var k ;
+var ii;
+
+for(i=0;i<0x10000;i++)
+{
+
+	for(j=0;j<length(code1);j++)
+	{
+		if(data[i+j]!=code1[j])break;
+		if(j == length(code1)-1)
+		{
+				print ("Boot Table  0x",i," to 0x",i+j," Mode 1.0\n");
+
+				for(k=0;k< length(code1);k++)
+				{
+					data[i+k] = boot;
+				}
+
+				r = TRUE;
+		}
+	}
+if (r==TRUE) break;
+	for(j=0;j<length(code2);j++)
+	{
+		if(data[i+j]!=code2[j])break;
+		if(j == length(code2)-1)
+		{
+
+				print ("Boot Table  0x",i," to 0x",i+j," Mode 1.1\n");
+
+				for(k=0;k< length(code2);k++)
+				{
+					data[i+k] = boot;
+				}
+				r = TRUE;
+		}
+	}
+if (r==TRUE) break;
+	for(j=0;j<length(code3);j++)
+	{
+		if(data[i+j]!=code3[j])break;
+		if(j == length(code3)-1)
+		{
+				print ("Boot Table  0x",i," to 0x",i+j," Mode 2\n");
+				for(k=0;k< length(code3);k++)
+				{
+					data[i+k] = boot;
+				}
+
+
+				for(ii=0;ii< length(data)-3;ii++)
+				{
+					if( data[ii]==0x54 &&  data[ii+1]==0x30 &&  data[ii+2]==0x4F )
+					{
+						data[ii]=0x00;
+						data[ii+1]=0x74;
+						data[ii+2]=0x00;
+					}
+				}			
+
+
+				r = TRUE;
+		}
+	}
+if (r==TRUE) break;
+	for(j=0;j<length(code4);j++)
+	{
+		if(data[i+j]!=code4[j])break;
+		if(j == length(code4)-1)
+		{
+				print ("Boot Table  0x",i," to 0x",i+j," Mode 3\n");
+				for(k=0;k< length(code3);k++)
+				{
+					data[i+k] = boot;
+				}
+
+				for(ii=0;ii< length(data)-3;ii++)
+				{
+					if( data[ii]==0x54 &&  data[ii+1]==0x30 &&  data[ii+2]==0x4F )
+					{
+						data[ii]=0x00;
+						data[ii+1]=0x74;
+						data[ii+2]=0x00;
+					}
+				}
+				r = TRUE;
+		}
+	}
+if (r==TRUE) break;
+	for(j=0;j<length(code5);j++)
+	{
+		if(data[i+j]!=code5[j])break;
+		if(j == length(code5)-1)
+		{
+				print ("Boot Table  0x",i," to 0x",i+j," Mode 4\n");
+				data[i] = boot;
+
+				for(ii=0;ii< length(data)-3;ii++)
+				{
+					if( data[ii]==0x54 &&  data[ii+1]==0x30 &&  data[ii+2]==0x4F )
+					{
+						data[ii+2]=0xe4;
+					}
+				}
+				r = TRUE;
+		}
+	}
+if (r==TRUE) break;
+}
+
+
+return (data,r);
+}
+
+
+defapi patch_uoc_i(): "Патч UOC I"
+{
+
+var data = pageLoad();
+
+var tcall=uoc_step_one(data);
+
+if(tcall == FALSE)
+{
+	print("Таблица не найдена. Патч не требуется.\n");
+	return;
+}
+
+var r = FALSE;
+
+(data,r) = p_mode(data);
+
+if(r == TRUE)
+{
+pageStore(data,"patched");
+print ("Патч выполнен!\n");
+}
+
+if(tcall == TRUE and r == FALSE)
+{
+print ("Автоматический патч невозможен. Проверьте, возможна ли запись поверх без патча или воспользуйтесь дизассемблером!\n");
+}
+
+}
+
+
+
+
+defapi patch_sm(): "Патч SplitMemory"
+{
+
+var data = pageLoad();
+
+%E4   F5   [K]   85   [M]    [N]   12   [P]   [S]   7F   01   12
+
+var code_sm = fromHex("E4 F5 00 85 00 00 12 00 00 7F 01 12");
+
+var r = FALSE;
+var i,j;
+for(i=0;i<length(data);i++)
+{
+
+	for(j=0;j<length(code_sm);j++)
+	{
+		if (j==2 ||  j==4 ||  j== 5 ||  j== 7 ||  j== 8) continue;
+		if(data[i+j]!=code_sm[j]) break;
+		if(j == length(code_sm)-1)
+		{
+				print ("Boot Table  0x",i," to 0x",i+j,"\n");
+
+				data[i+3]=0x75;
+				data[i+4]=data[i+5];
+				data[i+5] = data[0xFFF3];
+
+				r = TRUE;
+		}
+	}
+if (r == TRUE) break;
+}
+
+
+if(r == TRUE)
+{
+pageStore(data,"patched");
+print ("Патч выполнен!\n");
+}
+else
+{
+print ("Патч не требуется!\n");
+}
+
+}

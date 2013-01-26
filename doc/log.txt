@@ -1,0 +1,185 @@
+ChangeLog
+f0ma, f0ma@smtp.ru
+v0.9.4
+
+   44 f0ma	2012-09-30
+      Export filters added.
+      UOC and ST OSD file support added.
+      Open Hex like Bin message box added.
+
+   43 f0ma	2012-09-10
+      Import/Export module.
+
+   42 f0ma	2012-06-16
+      minor bugfix
+
+   41 f0ma	2012-04-20
+      motorola S-record support
+
+   40 f0ma	2012-04-09
+      Добавлена поддержка MOT файлов.
+      Добавлен поиск строк для 16 битных прошивок.
+      Исправлены ошибки в подсветке.
+
+   39 f0ma	2012-02-03
+      Добавлена подсветка синтаксиса. Пофиксены баги с сохранением hex файлов.
+
+   38 f0ma	2012-01-20
+      Обнавлен перевод, добавлены новые файлы.
+
+   37 f0ma	2012-01-20
+      Добавлена поддержка INI файлов.
+
+   36 f0ma	2012-01-20
+      Добавлен менеджер двоичных файлов.
+
+   35 f0ma	2011-11-23
+      fix EPP+ECP bug
+
+   34 f0ma	2011-11-22
+      fix *.bin file bug
+
+   33 f0ma	2011-11-22
+      versioning fix - first public release
+
+   32 f0ma	2011-11-16
+      Code cleanup
+
+   31 f0ma	2011-11-01
+      Добавлена функция управления таймаутом ком порта.
+      Устранена утечка памяти
+
+   30 f0ma	2011-09-30
+      Добавлены I2C и I2C LPT Demo
+      Устранен конфликт в модуле протоколирования
+
+   29 f0ma	2011-09-23
+      Новый таймер высокого разрешения.
+      Из дерева убрана папка doxydox.
+      Парный скроллинг при сравнении файлов.
+
+   28 f0ma	2011-09-16
+      Добавлены демки для  API.
+      Много багфиксов.
+
+   27 f0ma	2011-09-14
+      Поиск и сравнение HEX файлов.
+      Копирайт
+      Исправленная документация.
+      Много багфиксов.
+
+   26 f0ma	2011-09-07
+      Проблема со сбросом положения скролла была решена грязным хаком.
+
+   25 f0ma	2011-09-06
+      Новая версия HEX редактора (дополнительно разогнанная).
+      Выделение строк.
+      Опция запоминание настроек интерфейса (изначально выключена).
+      Динасическое формирование библиотеки.
+
+   24 f0ma	2011-07-15
+      Первый комит после дилома. В комплекте Doxy документация, и много-много исправлений.
+      Добавлена поддержка диалога опций.
+
+   23 f0ma	2011-04-11
+      Документация в формате T2T 
+
+   22 f0ma	2011-04-08
+      Исправлена ошибка с номером строки.
+      Исправлена ошибка SaveFileAs
+      Исправлно названи диалогов
+
+   21 f0ma	2011-01-12
+      Fixup windows build
+      Fix winio.dll NULL pointer bug
+
+   20 f0ma	2011-01-12
+      Новый менеджер драйверов
+      Индикатор работы
+      Новый диалог опций
+      Новый формат вывода массивов
+      Новый суперкласс интерфейсов
+
+   19 f0ma	2011-01-05
+      Документация и справка. 
+      Единый PRO файл для сборкв винде и линухе. 
+      Новое окно "О программе".
+
+   18 f0ma	2010-10-24
+      Array fixup (UChar used now).
+      Hex file loader.
+
+   17 f0ma	2010-10-15
+      LPT3 support.
+      some documentation fixup
+
+   16 f0ma	2010-10-06
+      internal array support
+
+   15 f0ma	2010-09-20
+      Argument count control
+      add arrayFrom
+      add subArray
+      add Abort in question
+
+   14 f0ma	2010-09-12
+      Question function added
+
+   13 f0ma	2010-09-11
+      Help added.
+      Some crash fixed.
+
+   12 f0ma	2010-09-11
+      Added Micronas I2C driver support
+      Fix ByteArray check
+
+   11 f0ma	2010-09-03
+      Driver manager support
+      CodeFile fixup
+      Initial i2c support
+      Micronas Lpt header in code tree
+
+   10 f0ma	2010-08-31
+      Initial code catalog support
+
+    9 f0ma	2010-07-26
+      v0.4 Main title fixed
+      Unicode fixed
+
+    8 f0ma	2010-07-26
+      WinIO v3.0
+      Unicode bux fixup
+      fill and concat function added
+      help fixup
+
+    7 f0ma	2010-07-23
+      LPT port tested succsessful
+      COM port tested (not full)
+      Log problem fixed
+      Help added
+
+    6 f0ma	2010-07-21
+      Lpt interface (console and Winio)
+      WinIO build under windows
+
+    5 f0ma	2010-07-21
+      Win32 build succsessful
+
+    4 f0ma	2010-07-20
+      Com port initial support
+      Com port Console mode
+      Hardware control page
+      New code editor (from Qt Examples)
+      Log control
+      Examples in code tree
+
+    3 f0ma	2010-07-19
+      File load/save.
+      Pager fixup.
+
+    2 f0ma	2010-07-18
+      Multitab Hex editor support
+
+    1 f0ma	2010-07-17
+      Initial commit
+

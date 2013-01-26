@@ -1,3 +1,6 @@
+#Temp
+*~
+
 # C++ objects and libs
 
 *.slo
@@ -17,4 +20,6 @@
 moc_*.cpp
 qrc_*.cpp
 Makefile
-*-build-*
+
+#Users
+*.user

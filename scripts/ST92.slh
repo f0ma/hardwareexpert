@@ -1,0 +1,647 @@
+%2micom.ru Team \ ST92 \ Чтение и запись микросхем ST92
+
+% новый дамп 1 = TDI, 2 = TRST, 3 = TEST0, 4 =OSC, 5 = RESET, 6 = TCK, 7 = CLKREV 8 = TMS
+var  DUMP_RESET=4, DUMP_TMS=7, DUMP_TCK=5, DUMP_TDI=0, DUMP_TRST=1,   DUMP_OSC=3,  DUMP_TEST0=2;
+%DUMP_DATAWR=, DUMP_TDO=,
+
+
+var OUT_RESET=0, OUT_TMS=1,OUT_TCK=2,OUT_TDI=3,OUT_TRST=4,OUT_COMM=7,OUT_OSC = 6;
+var  COUT_TEST0=2;
+var  COUT_VPP=1;
+
+
+var IN_READ=6,IN_TDO=7,IN_CLKRET=5,IN_ERR=3;
+
+
+var boot_speed = 20;
+
+progValue(0);
+
+var portD = 0;
+var portC = 0;
+
+var mbit = 0;
+var mbyte = 0;
+var mbitcount = 0;
+
+var chip_nask = FALSE;
+
+var jtg;
+
+def init()
+{
+var v = lptOpen();
+progValue(0);
+
+portD = 0;
+portC = 0;
+
+mbit = 0;
+mbyte = 0;
+mbitcount = 0;
+chip_nask = FALSE;
+}
+
+def readclk()
+{
+portD = setBit(portD,OUT_TMS,0);
+lptSetData(portD);
+
+var cntw = 1000;
+
+while(getBit(lptGetStat(),5) ==1)
+{
+if(cntw==0)
+{
+chip_nask = TRUE;
+return;
+}
+cntw--;
+}
+
+
+portD = setBit(portD,OUT_TMS,1);
+lptSetData(portD);
+
+while(getBit(lptGetStat(),5) ==0)
+{
+if(cntw==0)
+{
+chip_nask = TRUE;
+return;
+}
+cntw--;
+}
+
+
+
+
+mbit = getBit(lptGetStat(),6);
+
+%portD = setBit(portD,OUT_TMS,0);
+%lptSetData(portD);
+}
+
+def jtg_convert(jtbyte)
+{
+
+%if(getBit(jtbyte,DUMP_RESET)==1) portD = setBit(portD,OUT_RESET,0);
+%else  portD = setBit(portD,OUT_RESET,1);
+portD = setBit(portD,OUT_RESET,getBit(jtbyte,DUMP_RESET));
+portD = setBit(portD,OUT_TMS,getBit(jtbyte,DUMP_TMS));
+portD = setBit(portD,OUT_TCK,getBit(jtbyte,DUMP_TCK));
+portD = setBit(portD,OUT_TRST,getBit(jtbyte,DUMP_TRST));
+portD = setBit(portD,OUT_TDI,getBit(jtbyte,DUMP_TDI));
+portD = setBit(portD,OUT_OSC,getBit(jtbyte,DUMP_OSC));
+
+portD = setBit(portD,OUT_COMM,0);
+%port = setBit(port,OUT_DATAWR,getBit(jtbyte,DUMP_DATAWR))
+%port = setBit(port,OUT_TDO,getBit(jtbyte,DUMP_TDO))
+%port = setBit(port,OUT_CLKREAD,getBit(jtbyte,DUMP_CLKREAD))
+
+portC = setBit(portC,COUT_TEST0,getBit(jtbyte,DUMP_TEST0));
+%getBit(jtbyte,DUMP_VPP)
+portC = setBit(portC,COUT_VPP,1);
+
+}
+
+def read_prog()
+{
+init();
+
+wait(100);    
+portC = setBit(portC,COUT_VPP,1);
+lptSetCtrl(portC);
+
+print("\nReading ST92195D7 EPROM area\nUploading boot...");
+
+var jtg = load("st92-progr.raw");
+
+var i=0xffffffff;
+
+portD = setBit(portD,OUT_TCK,0);
+portD = setBit(portD,OUT_COMM,0);
+lptSetData(portD);
+
+
+
+wait(100);    
+
+for (i=0;i<0x1ef80;i++)
+{
+wait(boot_speed);
+jtg_convert(jtg[i]);
+lptSetData(portD);
+lptSetCtrl(portC);
+}
+
+wait(100);    
+portD = setBit(portD,OUT_COMM,1);
+lptSetData(portD);
+wait(100);    
+
+wait(100000);
+
+print("Ok\nReading...");
+
+
+portD = setBit(portD,OUT_TMS,1);
+lptSetData(portD);
+wait(100);    
+portD = setBit(portD,OUT_TCK,0);
+lptSetData(portD);
+wait(100);    
+
+var prog_memory = ByteArray [0x10000];
+
+var adr = 0;
+var dc;
+
+for(dc =0;dc<24;dc++)
+{
+wait(10);    
+readclk();
+if (chip_nask) 
+{
+print("Error chip not answered! (stub)\n");
+return (FALSE,prog_memory);
+}
+
+}
+
+progMax(0x10000);
+progValue(0);
+
+while (1)
+{
+wait(10);    
+readclk();
+
+if (chip_nask) 
+{
+print("Error chip not answered! (adr=",adr,")\n");
+return (FALSE,prog_memory);
+}
+
+mbyte = mbyte | (mbit<<(7-mbitcount));
+
+if(mbitcount == 7)
+{
+prog_memory[adr] = mbyte;
+%print(mbyte,"\n");
+adr++;
+mbitcount=0;
+mbyte = 0;
+if(adr==0x10000) break;
+progValue(adr);
+continue;
+}
+mbitcount++;
+}
+
+
+
+print("Ok\n");
+
+lptClose();
+progValue(0);
+return (TRUE,prog_memory);
+}
+
+
+def read_osd()
+{
+init();
+
+print("\nReading ST92195D7 OSD area\nUploading boot...");
+
+var jtg = load("st92-osdr.raw");
+
+var i=0xffffffff;
+
+portD = setBit(portD,OUT_TCK,0);
+portD = setBit(portD,OUT_COMM,0);
+lptSetData(portD);
+
+wait(100);    
+
+for (i=0;i<0x1f530;i++)
+{
+wait(boot_speed);
+jtg_convert(jtg[i]);
+lptSetData(portD);
+lptSetCtrl(portC);
+}
+
+wait(100);    
+portD = setBit(portD,OUT_COMM,1);
+lptSetData(portD);
+wait(100);    
+
+
+wait(100000);
+
+print("Ok\nReading...");
+
+portD = setBit(portD,OUT_TMS,1);
+lptSetData(portD);
+wait(100);        
+portD = setBit(portD,OUT_TCK,0);
+lptSetData(portD);
+wait(100);    
+
+var prog_memory = ByteArray [0x5400];
+
+var adr = 0;
+var dc;
+
+%for(dc =0;dc<24;dc++)
+%{
+%wait(10);    
+%readclk();
+%}
+
+progMax(0x5400);
+progValue(0);
+
+while (1)
+{
+wait(10);    
+readclk();
+
+if (chip_nask) 
+{
+print("Error chip not answered! (adr=",adr,")\n");
+return (FALSE,prog_memory);
+}
+
+mbyte = mbyte | (mbit<<(7-mbitcount));
+
+if(mbitcount == 7)
+{
+prog_memory[adr] = mbyte;
+%print(mbyte,"\n");
+adr++;
+mbitcount=0;
+mbyte = 0;
+if(adr==0x5400) break;
+if(adr==0x1400) adr=0x2000;
+if(adr==0x3400) adr=0x4000;
+progValue(adr);
+continue;
+}
+mbitcount++;
+}
+
+%pageStore(prog_memory,"OSD");
+
+print("Ok\n");
+
+lptClose();
+progValue(0);
+return (TRUE,prog_memory);
+}
+
+
+def write_prog()
+{
+
+var prog_memory = pageLoad();
+
+if (length(prog_memory)!=0x10000)
+{
+print("\nInvalid memory size (may be OSD  file used)\n");
+return FALSE;
+}
+
+init();
+
+print("\nWriting ST92195D7 EPROM area\nUploading boot...");
+
+var jtg = load("st92-progw.raw");
+
+var i=0xffffffff;
+
+portD = setBit(portD,OUT_TCK,0);
+portD = setBit(portD,OUT_COMM,0);
+lptSetData(portD);
+
+wait(100);    
+
+for (i=0;i<0x1f180;i++)
+{
+wait(boot_speed);
+jtg_convert(jtg[i]);
+lptSetData(portD);
+lptSetCtrl(portC);
+}
+
+wait(100);    
+portD = setBit(portD,OUT_COMM,1);
+lptSetData(portD);
+
+wait(100000);
+
+%if(ask ("Writing","Turn ON VPP. Press No or Abort to Exit")==FALSE) return;
+
+print("Ok\nWriting...");
+
+portD = setBit(portD,OUT_TMS,1);
+lptSetData(portD);
+wait(100);      
+portD = setBit(portD,OUT_TCK,0);
+lptSetData(portD);
+wait(100);    
+
+
+
+var adr = 0;
+var dc;
+
+for(dc =0;dc<24;dc++)
+{
+wait(10);    
+readclk();
+if (chip_nask) 
+{
+print("Error chip not answered! (stub)\n");
+return FALSE;
+}
+}
+
+progMax(0x10000);
+progValue(0);
+
+mbyte =  prog_memory[adr];
+
+while (1)
+{
+wait(10);    
+
+portD = setBit(portD,OUT_TCK,getBit(mbyte,7-mbitcount));
+lptSetData(portD);
+
+readclk();
+
+if (chip_nask) 
+{
+print("Error chip not answered! (adr=",adr,")\n");
+return FALSE;
+}
+
+if(mbitcount == 7)
+{
+%print(mbyte,"\n");
+adr++;
+mbitcount=0;
+if(adr==0x10000) break;
+progValue(adr);
+mbyte =  prog_memory[adr];
+wait(100);   
+readclk();
+continue;
+}
+mbitcount++;
+}
+
+
+wait(100);    
+portC = setBit(portC,COUT_VPP,1);
+lptSetCtrl(portC);
+
+print("Ok\n");
+
+lptClose();
+progValue(0);
+return TRUE;
+}
+
+
+
+
+def write_osd()
+{
+var prog_memory = pageLoad();
+
+if (length(prog_memory)!=0x5400)
+{
+print("\nInvalid memory size (may be EPROM  file used)\n");
+return FALSE;
+}
+
+init();
+
+print("\nWriting ST92195D7 OSD area\nUploading boot...");
+
+var jtg = load("st92-osdw.raw");
+
+var i=0xffffffff;
+
+portD = setBit(portD,OUT_TCK,0);
+portD = setBit(portD,OUT_COMM,0);
+lptSetData(portD);
+
+wait(100);    
+
+for (i=0;i<0x1f8f0;i++)
+{
+wait(boot_speed);
+jtg_convert(jtg[i]);
+lptSetData(portD);
+lptSetCtrl(portC);
+}
+
+wait(100);    
+portD = setBit(portD,OUT_COMM,1);
+lptSetData(portD);
+
+wait(100000);
+
+%if(ask ("Writing","Turn ON VPP. Press No or Abort to Exit")==FALSE) return;
+
+print("Ok\nWriting...");
+
+portD = setBit(portD,OUT_TMS,1);
+lptSetData(portD);
+wait(100);      
+portD = setBit(portD,OUT_TCK,0);
+lptSetData(portD);
+%wait(100);    
+
+
+
+var adr = 0;
+var dc;
+
+%for(dc =0;dc<3;dc++)
+%{
+%wait(1000);    
+%readclk();
+%}
+
+progMax(0x5400);
+progValue(0);
+mbitcount=0;
+
+mbyte =  prog_memory[adr];
+
+while (1)
+{
+wait(10);    
+
+portD = setBit(portD,OUT_TCK,getBit(mbyte,7-mbitcount));
+lptSetData(portD);
+
+readclk();
+
+if (chip_nask) 
+{
+print("Error chip not answered! (adr=",adr,")\n");
+return FALSE;
+}
+
+if(mbitcount == 7)
+{
+%print(mbyte,"\n");
+adr++;
+mbitcount=0;
+if(adr==0x5400) break;
+if(adr==0x1400) adr=0x2000;
+if(adr==0x3400) adr=0x4000;
+progValue(adr);
+mbyte =  prog_memory[adr];
+wait(100);   
+readclk();
+continue;
+}
+mbitcount++;
+}
+
+
+wait(100);    
+portC = setBit(portC,COUT_VPP,1);
+lptSetCtrl(portC);
+
+print("Ok\n");
+
+lptClose();
+progValue(0);
+return TRUE;
+}
+
+
+defapi gui_read_prom():"Reading EPROM"
+{
+var prog_memory1,prog_memory2,ret;
+(ret,prog_memory1) = read_prog();
+if(ret == FALSE)
+{
+print("Reading failure! \n");
+return;
+}
+(ret,prog_memory2) = read_prog();
+if(ret == FALSE)
+{
+print("Reading failure! \n");
+return;
+}
+
+var i;
+for(i=0;i<length( prog_memory1);i++)
+{
+if( prog_memory1[i]!= prog_memory2[i])
+{
+print("Verification failed (address ",i,")\n");
+return;
+}
+}
+
+print("Verify OK\n");
+pageStore(prog_memory1,"EPROM");
+}
+
+defapi gui_read_osd():"Reading OSD"
+{
+var osd_memory1,osd_memory2,ret;
+(ret,osd_memory1) = read_osd();
+if(ret == FALSE)
+{
+print("Reading failure! \n");
+return;
+}
+(ret,osd_memory2) = read_osd();
+if(ret == FALSE)
+{
+print("Reading failure! \n");
+return;
+}
+
+var i;
+for(i=0;i<length( osd_memory1);i++)
+{
+if( osd_memory1[i]!= osd_memory2[i])
+{
+print("Verification failed (address ",i,")\n");
+return;
+}
+}
+
+print("Verify OK\n");
+pageStore(osd_memory1,"OSD");
+}
+
+defapi gui_write_prom():"Writing EPROM"
+{
+var prog_memory1 = pageLoad(), prog_memory2,ret;
+ret = write_prog();
+if(ret == FALSE)
+{
+print("Write failure! \n");
+return;
+}
+print("Verify...\n");
+(ret,prog_memory2) = read_prog();
+if(ret == FALSE)
+{
+print("Reading failure! \n");
+return;
+}
+var i;
+for(i=0;i<length(prog_memory1);i++)
+{
+if(prog_memory1[i]!=prog_memory2[i])
+{
+print("Verification failed (address ",i,")\n");
+return;
+}
+}
+print("Verify OK\n");
+}
+
+defapi gui_write_osd():"Writing OSD"
+{
+var osd_memory1 = pageLoad(),osd_memory2,ret;
+ret = write_osd();
+if(ret == FALSE)
+{
+print("Write failure! \n");
+return;
+}
+print("Verify...\n");
+(ret,osd_memory2) = read_osd();
+if(ret == FALSE)
+{
+print("Reading failure! \n");
+return;
+}
+var i;
+for(i=0;i<length(osd_memory1);i++)
+{
+if(osd_memory1[i]!=osd_memory2[i])
+{
+print("Verification failed (address ",i,")\n");
+return;
+}
+}
+print("Verify OK\n");
+}

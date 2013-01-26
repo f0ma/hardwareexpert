@@ -1,0 +1,19 @@
+%Demo \ Bit Demo \ Демонстрация побитовых операций
+
+defapi bitwise() : "Биты"
+{
+
+var k;
+k = 0b1001;
+
+print("K=:\n",
+BIN,k,"\n",
+BIN,k<<1,"\n",
+BIN,k<<8,"\n",
+BIN,setBit(k,1,1),"\n",
+BIN,setBit(k,0,0),"\n",
+DEC,getBit(k,0),"\n"
+);
+
+}
+

@@ -1,0 +1,42 @@
+%Demo \ Dialog Demo \ Демонстрация диалога с пользователем
+
+defapi question() : "Вопрос пользователю"
+{
+
+print("Пользователь ответил:");
+
+if(ask ("Вопрос пользователю","Да или Нет")==TRUE)
+{
+print("ДА\n");
+}
+else
+{
+print("НЕТ\n");
+}
+
+}
+
+defapi ops() : "Выбор опций"
+{
+optClear();
+
+var List = ["Перавая опция","Вторая опция"];
+optOption ("opt1","Выпадающий список", List, OPT_LIST);
+
+optOption ("opt2","Флажок", TRUE, OPT_CHK);
+
+optOption ("opt3","Число", 42, OPT_DEC);
+
+optOption ("opt4","Число", 42, OPT_HEX);
+
+optOption ("opt5","Строка", "demo", OPT_STR);
+
+optDialog();
+
+print("Выпадающий список:",List[optOption ("opt1")],"\n");
+print("Флажок:",optOption ("opt2"),"\n");
+print("Число(DEC):",DEC,optOption ("opt3"),"\n");
+print("Число(HEX):",optOption ("opt4"),"\n");
+print("Строка:",optOption ("opt5"),"\n");
+}
+

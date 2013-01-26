@@ -1,0 +1,996 @@
+%2micom.ru Team \ UOC-I / UOC SplitMemory \ Чтение и запись микросхем UOC-I и UOC SplitMemory v1.3
+
+var pinCLK=0x1, pinIO = 0x2, pinAD = 0x4, pinRST= 0x8, pinMODE=0x10, pinWE=0x20, pinVP=0x40, pinPULL=0x80;
+
+var Ctrl=0,Clk=2,isLeader=0, last_size_detect=0;
+
+var signature = ByteArray [8];
+
+var resultArray = ByteArray [0];
+
+def setcontrolpin(PIN,VALUE)
+{
+
+if(PIN==pinCLK && VALUE == 1) {Ctrl=setBit(Ctrl,0,1); lptSetCtrl(Ctrl); lptSetCtrl(Ctrl); return;}
+if(PIN==pinCLK && VALUE == 0) {Ctrl=setBit(Ctrl,0,0); lptSetCtrl(Ctrl); lptSetCtrl(Ctrl); return;}
+
+Ctrl=setBit(Ctrl,1,0);
+Ctrl=setBit(Ctrl,2,0);
+Ctrl=setBit(Ctrl,3,0);
+
+if(VALUE == 0)
+{
+lptSetCtrl(Ctrl);
+}
+
+else
+{
+if(PIN==pinAD)Ctrl=setBit(Ctrl,1,1);
+if(PIN==pinIO)Ctrl=setBit(Ctrl,2,1);
+if(PIN==pinMODE)Ctrl=setBit(Ctrl,3,1);
+
+if(PIN==pinWE)
+{
+Ctrl=setBit(Ctrl,1,1);
+Ctrl=setBit(Ctrl,2,1);
+
+}
+
+if(PIN==pinVP)
+{
+Ctrl=setBit(Ctrl,2,1);
+Ctrl=setBit(Ctrl,3,1);
+
+}
+
+
+if(PIN==pinRST)
+{
+Ctrl=setBit(Ctrl,1,1);
+Ctrl=setBit(Ctrl,3,1);
+}
+
+lptSetCtrl(Ctrl);
+}
+}
+
+def testconn()
+{
+
+print("Проверка соединения с МС: ");
+
+setcontrolpin(pinCLK,0);
+wait(10000);
+var v = lptGetStat();
+setcontrolpin(pinCLK,1);
+wait(10000);
+var u = lptGetStat();
+
+if(v != u) 
+{
+print("Успешно.\n");
+return 1;
+}
+else  
+{
+print("Ошибка!!!\n");
+return 0;
+}
+}
+
+def clock(n)
+{
+var i;
+for(i=0;i<n;i++)
+{
+setcontrolpin(pinCLK,1);
+setcontrolpin(pinCLK,0);
+}
+}
+
+
+define enter()
+{
+
+var mmm = lptOpen();
+setcontrolpin(pinCLK,0);
+setcontrolpin(pinIO,0);
+setcontrolpin(pinAD,0);
+setcontrolpin(pinMODE,0);
+setcontrolpin(pinRST,1);
+
+clock(5000);
+
+setcontrolpin(pinRST,0);
+
+clock(3);
+
+setcontrolpin(pinRST,1);
+
+clock(5);
+
+setcontrolpin(pinRST,0);
+
+clock(1);
+
+setcontrolpin(pinRST,1);
+
+clock(1);
+
+setcontrolpin(pinRST,0);
+
+clock(Clk);
+
+setcontrolpin(pinMODE,1);
+lptSetData(0x4E);
+
+clock(1);
+
+lptSetData(0xF8);
+
+clock(1);
+
+setcontrolpin(pinMODE,0);
+
+clock(5);
+}
+
+def isCleanArea(arr,st,len)
+{
+var i,c=0;
+for(i=st;i<length(arr) && i<len ;i++)
+{
+if(arr[i]!=0xFF){c=1;break;}
+}
+return c;
+}
+
+def read (BANK,SEQ,BASE,HSIZE,START)
+{
+ 
+var s;
+var L=0,H=0;
+var v=0,summ=0xFF;
+var r=0;
+   
+s = ByteArray[256*(HSIZE+1)];
+
+enter();
+
+
+progMax(HSIZE);
+for(H=START;H<=HSIZE;H++)
+{
+progValue(H);
+
+
+	for(L=0;L<256;L++)
+	{
+
+		lptSetData(BANK);
+		clock(1);
+		setcontrolpin(pinAD,1);
+		clock(1);
+		lptSetData(H);
+		clock(1);
+		lptSetData(L);
+		clock(1);
+
+		setcontrolpin(pinAD,0);
+		clock(1);
+	
+		lptSetMode(IN);
+
+		setcontrolpin(pinIO,1);
+
+
+
+		clock(1);
+
+		if(SEQ==1)
+		{
+			s[H*0x100+L]=lptGetData();
+
+		};
+
+		clock(1);
+
+		if(SEQ==2)
+		{
+			s[H*0x100+L]=lptGetData();
+		};
+
+		clock(1);
+
+		setcontrolpin(pinIO,0);
+
+
+		clock(20);
+		lptSetMode(OUT);
+
+		clock(8);
+
+	}
+
+}
+
+progValue(0);
+return s;
+}
+
+var clrChk=0;
+
+def check()
+{
+print ("Определение типа МС: ");
+lptSetMode(OUT);
+var s,l,r=0;
+var e;
+
+var pr =read (0x7C,1,0,0x0,0x0);
+
+clrChk =1;
+
+for(e=0;e<256;e++)
+{
+if(pr[e]!=0xFF) clrChk =0;
+}
+
+pr = read (0x80,1,0,0x0,0x0);
+
+for(e=0;e<256;e++)
+{
+if(pr[e]!=0xFF) clrChk =0;
+}
+
+var u =read (0x80,1,0x40000,0x7F,0x7F);
+var u2 =read (0x80,2,0x40000,0x7F,0x7F);
+if(((u[0x7FF9] & 0xF0) !=0xF0) || ((u[0x7FFA] & 0xF0) !=0xF0))
+{
+if(u[0x7FF9]!=u[0x7FF8])
+{
+print ("Split memory\n"); 
+
+print ("Signature :"); 
+
+var k=0,hh=0;
+
+for(k=0x7FF8;k<=0x7FFB;k++) {signature[hh]=u2[k];signature[hh+1]=u[k]; hh+=2;}
+
+print(signature[1],signature[0]," ",signature[3],signature[2]," ",signature[5],signature[4],"\n");
+
+return 3;
+}
+}
+
+var ch1 =read (0x7C,2,0,0x0,0x0);
+var ch2 =read (0x7D,2,0,0x0,0x0);
+var mm,cntm=0,cntz=0;
+
+for(mm=0;mm<length(ch1);mm++)
+{
+if(ch1[mm]==ch2[mm])cntm++;
+if(ch2[mm]==0x00 || ch2[mm]==0xFF)cntz++;
+}
+
+if(cntm==length(ch1) ||cntz==length(ch1) ){print("\nDectected size = 64\n");last_size_detect=64;}
+else {print("\n Dectected size = 128\n");last_size_detect=128;}
+
+Clk=2;
+l = read (0x80,2,0,0x09,0x09);
+s = read (0x80,2,0,0x0B,0x0B);
+
+var s1 = read (0x80,1,0,0x0B,0x0B);
+var l1 = read (0x80,1,0,0x09,0x09);
+
+if(s[0x0BFE]!=0xFF)
+{
+if(s[0x0BFF]==0xFF)
+{
+print ("Type 2\n");
+signature[0]=l1[0x09FE];
+signature[1]=l[0x09FE];
+signature[2]=l1[0x09FF];
+signature[3]=l[0x09FF];
+signature[4]=s1[0x0BFE];
+signature[5]=s[0x0BFE];
+signature[6]=s1[0x0BFF];
+signature[7]=s[0x0BFF];
+print ("Signature: ",l1[0x09FE],l[0x09FE]," ",l1[0x09FF],l[0x09FF]," ",s1[0x0BFE],s[0x0BFE],"\n"); 
+
+return 1;
+}
+if(s[0x0BFF]==0x00)
+{
+print ("Type 2\n");
+signature[0]=l1[0x09FE];
+signature[1]=l[0x09FE];
+signature[2]=l1[0x09FF];
+signature[3]=l[0x09FF];
+signature[4]=s1[0x0BFE];
+signature[5]=s[0x0BFE];
+signature[6]=s1[0x0BFF];
+signature[7]=s[0x0BFF];
+print ("Signature: ",l1[0x09FE],l[0x09FE]," ",l1[0x09FF],l[0x09FF]," ",s1[0x0BFE],s[0x0BFE],"\n"); 
+
+return 1;
+}
+}
+
+Clk=1;
+s = read (0x80,2,0,0x0B,0x0B);
+l = read (0x80,2,0,0x09,0x09);
+
+s1 = read (0x80,1,0,0x0B,0x0B);
+l1 = read (0x80,1,0,0x09,0x09);
+
+
+if(s[0x0BFE]!=0xFF)
+{
+if(s[0x0BFF]==0xFF)
+{
+print ("Type 1\n");
+signature[0]=l1[0x09FE];
+signature[1]=l[0x09FE];
+signature[2]=l1[0x09FF];
+signature[3]=l[0x09FF];
+signature[4]=s1[0x0BFE];
+signature[5]=s[0x0BFE];
+signature[6]=s1[0x0BFF];
+signature[7]=s[0x0BFF];
+print ("Signature: ",l1[0x09FE],l[0x09FE]," ",l1[0x09FF],l[0x09FF]," ",s1[0x0BFE],s[0x0BFE],"\n"); 
+
+return 1;
+}
+
+if(s[0x0BFF]==0)
+{
+print ("Type 1\n");
+signature[0]=l1[0x09FE];
+signature[1]=l[0x09FE];
+signature[2]=l1[0x09FF];
+signature[3]=l[0x09FF];
+signature[4]=s1[0x0BFE];
+signature[5]=s[0x0BFE];
+signature[6]=s1[0x0BFF];
+signature[7]=s[0x0BFF];
+print ("Signature: ",l1[0x09FE],l[0x09FE]," ",l1[0x09FF],l[0x09FF]," ",s1[0x0BFE],s[0x0BFE],"\n"); 
+
+return 1;
+}
+}
+
+print ("Ошибка, проверьте микросхему!\n");
+return 0;
+}
+
+def read64() 
+{
+
+if(last_size_detect == 128) {print("Несоответствие размера! Установите размер = 128К!\n");return;}
+
+print("Чтение банков IC: ");
+
+lptSetMode(OUT);
+var u,s,t = ByteArray[0x100*(0x100-0x30)],m = ByteArray[0x10000*3];
+fill(t,0xFF);
+fill(m,0xFF);
+print("PROG ");
+s = read (0x7C,1,0,0xFF,0);
+s = concat(s,m);
+print("LCHAR ");
+u =read (0x80,2,0x40000,0x2F,0);
+s = concat(s,u);
+s = concat(s,t);
+print("HCHAR ");
+u= read (0x80,1,0x50000,0x2F,0); 
+s = concat(s,u);
+s = concat(s,t);
+print("PK26 ");
+u= read (0xC0,1,0x60000,0x0F,0); 
+s = concat(s,u);
+
+if(isCleanArea(s,0,0x10000)+
+isCleanArea(s,0x40000,0x09FE)+
+isCleanArea(s,0x40A00,0x2600)+
+isCleanArea(s,0x50000,0x09FE)+
+isCleanArea(s,0x50A00,0x2600) == 0) print("Микросхема чиста!\n");
+
+resultArray = s;
+progValue(0);
+}
+
+
+def read128() 
+{
+if(last_size_detect == 64) {print("Несоответствие размера! Установите размер = 64К!\n");return;}
+
+print("Чтение банков IC: ");
+
+lptSetMode(OUT);
+var u,s,t = ByteArray[0x100*(0x100-0x30)],m = ByteArray[0x10000*2];
+fill(t,0xFF);
+fill(m,0xFF);
+print("PROG1 ");
+s = read (0x7C,1,0,0xFF,0);
+print("PROG2 ");
+u = read (0x7D,1,0,0xFF,0);
+s = concat(s,u);
+s = concat(s,m);
+print("LCHAR ");
+u =read (0x80,2,0x40000,0x2F,0);
+s = concat(s,u);
+s = concat(s,t);
+print("HCHAR ");
+u= read (0x80,1,0x50000,0x2F,0); 
+s = concat(s,u);
+s = concat(s,t);
+print("PK26 ");
+u= read (0xC0,1,0x60000,0x0F,0); 
+s = concat(s,u);
+
+if(isCleanArea(s,0,0x20000)+
+isCleanArea(s,0x40000,0x09FE)+
+isCleanArea(s,0x40A00,0x2600)+
+isCleanArea(s,0x50000,0x09FE)+
+isCleanArea(s,0x50A00,0x2600) == 0) print("Микросхема чиста!\n");
+
+%print("\nЧтение завершено\n");
+resultArray = s;
+progValue(0);
+}
+
+
+def readleader()
+{
+print("Чтение банков IC: ");
+
+lptSetMode(OUT);
+var r = ByteArray[2*0x100*0x80];
+var u1,u2;
+
+print("First ");
+u1 =read (0x80,2,0x40000,0x7F,0);
+print("Second ");
+u2 =read (0x80,1,0x50000,0x7F,0); 
+
+var i,k=0;
+
+for(i=0;i<0x100*0x80;i++)
+{
+r[k]=u1[i];
+k++;
+r[k]=u2[i];
+k++;
+}
+
+resultArray = r;
+
+if(isCleanArea(r,0,0xFFF0) == 0) print("Микросхема чиста!\n");
+
+progValue(0);
+}
+
+
+
+defapi readuoci() :"Чтение UOC I"
+{
+optClear();
+last_size_detect = 0;
+var l = ["64K","128K"];
+optOption("size","Размер",l,OPT_LIST);
+optOption("check","Выполнять проверку соединения",1,OPT_CHK);
+optOption("double","Прочитать и проверить",1,OPT_CHK);
+
+optDialog();
+var ka;
+var ii;
+
+if(optOption("size")==0  && optOption("check")==1)
+{
+
+Clk=2;
+if(testconn()==0)return;
+if(check()!=1)return;
+read64();
+ka = resultArray;
+if(optOption("double")==1)
+{
+read64();
+
+for(ii=0;ii<length(resultArray);ii++)
+{
+if(ka[ii]!=resultArray[ii])
+{
+pageStore(ka,"Error Try 1");
+pageStore(resultArray,"Error Try 2");
+print("Ошибка верификации!\n");
+return;
+}
+}
+}
+pageStore(resultArray,"UOC I Firmware");
+print("\nЧтение завершено\n");
+}
+
+if(optOption("size")==1  && optOption("check")==1)
+{
+
+Clk=2;
+if(testconn()==0)return;
+if(check()!=1)return;
+read128();
+ka = resultArray;
+if(optOption("double")==1)
+{
+read128();
+
+for(ii=0;ii<length(resultArray);ii++)
+{
+if(ka[ii]!=resultArray[ii])
+{
+pageStore(ka,"Error Try 1");
+pageStore(resultArray,"Error Try 2");
+print("Оштбка верификации!\n");
+return;
+}
+}
+}
+pageStore(resultArray,"UOC I Firmware");
+print("\nЧтение завершено\n");
+}
+
+if(optOption("size")==0  && optOption("check")==0)
+{
+
+Clk=2;
+
+read64();
+ka = resultArray;
+if(optOption("double")==1)
+{
+read64();
+ii;
+for(ii=0;ii<length(resultArray);ii++)
+{
+if(ka[ii]!=resultArray[ii])
+{
+pageStore(ka,"Error Try 1");
+pageStore(resultArray,"Error Try 2");
+print("Ошибка верификации!\n");
+return;
+}
+}
+}
+pageStore(resultArray,"UOC I Firmware");
+print("\nЧтение завершено\n");
+}
+
+if(optOption("size")==1  && optOption("check")==0)
+{
+
+Clk=2;
+
+read128();
+ka = resultArray;
+if(optOption("double")==1)
+{
+read128();
+ii;
+for(ii=0;ii<length(resultArray);ii++)
+{
+if(ka[ii]!=resultArray[ii])
+{
+pageStore(ka,"Error Try 1");
+pageStore(resultArray,"Error Try 2");
+print("Ошибка верификации!\n");
+return;
+}
+}
+}
+pageStore(resultArray,"UOC I Firmware");
+print("\nЧтение завершено\n");
+}
+
+}
+
+defapi readleadchk() : "Чтение UOC SplitMemory"
+{
+
+Clk=2;
+optClear();
+optOption("check","Выполнять проверку",1,OPT_CHK);
+optOption("double","Прочитать и проверить",1,OPT_CHK);
+optDialog();
+
+if(optOption("check")==1)
+{
+
+if(testconn()==0)return;
+if(check()!=3)return;
+
+readleader();
+
+}
+else
+{
+readleader();
+}
+
+
+var ka = resultArray;
+var ii;
+if(optOption("double")==1)
+{
+readleader();
+ii;
+for(ii=0;ii<length(resultArray);ii++)
+{
+if(ka[ii]!=resultArray[ii])
+{
+pageStore(ka,"Error Try 1");
+pageStore(resultArray,"Error Try 2");
+print("Ошибка верификации!\n");
+return;
+}
+}
+}
+pageStore(resultArray,"UOC SplitMemory");
+print("\nЧтение завершено\n");
+
+
+}
+
+
+define Wcommand(COM,A1,A2,DAT)
+{
+var b1,b2;
+
+lptSetMode(OUT);
+
+lptSetData(COM);
+clock(1);
+setcontrolpin(pinAD,1);
+clock(1);
+lptSetData(A1);
+clock(1);
+lptSetData(A2);
+clock(1);
+setcontrolpin(pinAD,0);
+lptSetData(DAT);
+clock(1);
+setcontrolpin(pinWE,1);
+clock(32);
+setcontrolpin(pinWE,0);
+clock(3);
+
+lptSetMode(IN);
+setcontrolpin(pinIO,1);
+clock(1);
+b1=lptGetData();
+clock(1);
+b2=lptGetData();
+setcontrolpin(pinIO,0);
+lptSetMode(OUT);
+setcontrolpin(pinVP,1);
+return b1, b2;
+}
+
+define WcommandCHAR(COM,A1,A2,DATL,DATH)
+{
+variable b1=0,b2=0;
+
+lptSetMode(OUT);
+
+lptSetData(COM);
+clock(1);
+setcontrolpin(pinAD,1);
+clock(1);
+lptSetData(A1);
+clock(1);
+lptSetData(A2);
+clock(1);
+setcontrolpin(pinAD,0);
+lptSetData(DATL);
+clock(1);
+lptSetData(DATH);
+clock(2);
+setcontrolpin(pinWE,1);
+clock(64);
+setcontrolpin(pinWE,0);
+clock(3);
+
+lptSetMode(IN);
+
+setcontrolpin(pinIO,1);
+clock(1);
+b1=lptGetData();
+clock(1);
+b2=lptGetData();
+setcontrolpin(pinIO,0);
+lptSetMode(OUT);
+setcontrolpin(pinVP,1);
+return b1, b2;
+}
+
+define write(COM,BASE,HSIZE)
+{
+progMax(HSIZE);
+
+var m = pageLoad();
+
+var L=0,H=0;
+var a1,a2;
+
+for(H=0;H<=HSIZE;H++)
+{
+progValue(H);
+
+for(L=0;L<256;L++)
+{
+(a1,a2) = Wcommand(COM,H,L,m[L+H*256+BASE]);
+if (a1 != m[L+H*256+BASE]) {print("ERROR:",H," ",L," ",m[L+H*256+BASE]," ",L," ",a1," ",a2,"\n");setcontrolpin(pinVP,0);setcontrolpin(pinRST,1); return -1;}
+}
+}
+progValue(0);
+
+return 1;
+}
+
+define writeChar(COM,BASE,HSIZE)
+{
+variable m = pageLoad();
+
+variable L=0,H=0;
+variable a1,a2;
+
+progMax(HSIZE);
+
+
+for(H=0;H<=HSIZE;H++)
+{
+progValue(H);
+
+for(L=0;L<256;L++)
+{
+
+if(H==0x0B && L==0xFE) continue;
+if(H==0x0B && L==0xFF) continue;
+
+if(optOption("sign")==0)
+{
+if(H==0x09 && L==0xFE) continue;
+if(H==0x09 && L==0xFF) continue;
+}
+
+(a1,a2) = WcommandCHAR(COM,H,L,m[L+H*256+BASE],m[L+H*256+BASE+0x10000]);
+if (a1 != m[L+H*256+BASE+0x10000] && H<0x24) {print("ERROR H:",H," ",L,"\n");setcontrolpin(pinVP,0);setcontrolpin(pinRST,1); return -1;} 
+if (a2 != m[L+H*256+BASE] && H<0x24)  {print("ERROR:",H," ",L," ",m[L+H*256+BASE],m[L+H*256+BASE+0x10000]," ",a1," ",a2,"\n"); setcontrolpin(pinVP,0);setcontrolpin(pinRST,1); return -1;}
+}
+}
+progValue(0);
+
+return 1;
+}
+
+define writeLdr(COM,BASE,HSIZE)
+{
+variable m = pageLoad();
+
+variable L=0,H=0;
+variable a1,a2;
+
+progMax(HSIZE);
+
+var u1=ByteArray[0x100*0x80];
+var u2=ByteArray[0x100*0x80];
+var k=0;
+var i=0;
+
+for(i=0;i<0x100*0x80;i++)
+{
+u1[i]=m[k];
+k++;
+u2[i]=m[k];
+k++;
+}
+
+
+for(H=0;H<=HSIZE;H++)
+{
+progValue(H);
+
+for(L=0;L<256;L++)
+{
+
+if(H==0x7F && L==0xFA) continue;
+if(H==0x7F && L==0xFB) continue;
+if(H==0x7F && L==0xFC) continue;
+if(H==0x7F && L==0xFD) continue;
+
+(a1,a2) = WcommandCHAR(COM,H,L,u1[L+H*256+BASE],u2[L+H*256+BASE]);
+if (a2 != u1[L+H*256+BASE]) {print("ERROR H:",H," ",L," ",u1[L+H*256+BASE]," ",a2,"\n");setcontrolpin(pinVP,0);setcontrolpin(pinRST,1);return -1;}
+if (a1 != u2[L+H*256+BASE])  {print("ERROR L:",H," ",L," ",u2[L+H*256+BASE]," ",a1,"\n");setcontrolpin(pinVP,0);setcontrolpin(pinRST,1);return -1;}
+}
+}
+progValue(0);
+return 1;
+}
+
+defapi writeleader() : "Запись UOC SplitMemory"
+{
+optClear();
+optOption("vpp","Ожидать подключения VPP",1,OPT_CHK);
+optOption("sign","Проверить и записать сигнатуру",1,OPT_CHK);
+optDialog();
+
+variable a1,a2;
+
+isLeader=1;
+
+var qr;
+
+
+
+qr = ask("Запись","Записать микросхему?");
+
+if(qr==0)return;
+
+
+Clk=2;
+
+var re =1;
+
+if(testconn()==0)return;
+if(check()!=3)return;
+
+var fileData = pageLoad();
+
+print("Sig in file:",fileData[0xFFF0],fileData[0xFFF1],fileData[0xFFF2],fileData[0xFFF3],fileData[0xFFF4],fileData[0xFFF5],fileData[0xFFF6],fileData[0xFFF7],"\n");
+
+var retkar = 0;
+
+if((signature[0] & fileData[0xFFF0]) != fileData[0xFFF0]) {print("\nНесовместимая сигнатура по адресу ",0xFFF0," ",fileData[0xFFF0]," поверх ",signature[0]); retkar=1;}
+if((signature[1] & fileData[0xFFF1]) != fileData[0xFFF1]) {print("\nНесовместимая сигнатура по адресу ",0xFFF1," ",fileData[0xFFF1]," поверх ",signature[1]); retkar=1;}
+if((signature[2] & fileData[0xFFF2]) != fileData[0xFFF2]) {print("\nНесовместимая сигнатура по адресу ",0xFFF2," ",fileData[0xFFF2]," поверх ",signature[2]); retkar=1;}
+if((signature[3] & fileData[0xFFF3]) != fileData[0xFFF3]) {print("\nНесовместимая сигнатура по адресу ",0xFFF3," ",fileData[0xFFF3]," поверх ",signature[3]); retkar=1;}
+
+if(optOption("sign")==1 && retkar==1) return;
+
+if(clrChk==0) qr=ask("Запись","Микросхема не чиста. Все равно записать?");
+
+if(optOption("sign")==0 && retkar==1)
+{
+qr=ask("Запись","Сигнатура не совместима! Микросхема может быть испорчена! Продолжить?");
+}
+
+if(qr==0)return;
+
+enter();
+
+if(optOption("vpp")==1)
+{
+qr = ask("Запись","Подключите VPP.");
+if(qr==0)return;
+}
+
+setcontrolpin(pinVP,1);
+
+clock(1000);
+
+print("Write ","\n");
+re = writeLdr(0x80,0,0x7F);
+
+if(re != 1)return;
+
+setcontrolpin(pinVP,0);
+
+setcontrolpin(pinRST,1);
+
+clock(5);
+
+setcontrolpin(pinRST,0);
+
+print("OK","\n");
+
+isLeader=0;
+
+
+}
+
+defapi writeuoci() : "Запись UOC-I"
+{
+optClear();
+var l = ["64K","128K"];
+optOption("size","Размер",l,OPT_LIST);
+optOption("vpp","Ожидать подключения VPP",1,OPT_CHK);
+optOption("sign","Проверить и записать сигнатуру",1,OPT_CHK);
+optDialog();
+
+
+var a1,a2;
+
+isLeader=0;
+
+var qr;
+
+qr = ask("Запись","Записать микросхему?");
+
+if(qr==0)return;
+
+
+Clk=2;
+
+if(testconn()==0)return;
+if(check()!=1)return;
+
+var fileData = pageLoad();
+
+print("Sig in file:",fileData[0x509FE],fileData[0x409FE],fileData[0x509FF],fileData[0x409FF],fileData[0x50bFE],fileData[0x40bFE],fileData[0x50bFF],fileData[0x40bFF],"\n");
+
+var retkar = 0;
+
+if((signature[0] & fileData[0x509FE]) != fileData[0x509FE]) {print("\nНесовместимая сигнатура по адресу ",0x509FE," ",fileData[0x509FE]," поверх ",signature[0]); retkar=1;}
+if((signature[1] & fileData[0x409FE]) != fileData[0x409FE]) {print("\nНесовместимая сигнатура по адресу ",0x409FE," ",fileData[0x409FE]," поверх ",signature[1]); retkar=1;}
+if((signature[2] & fileData[0x509FF]) != fileData[0x509FF]) {print("\nНесовместимая сигнатура по адресу ",0x509FF," ",fileData[0x509FF]," поверх ",signature[2]); retkar=1;}
+if((signature[3] & fileData[0x409FF]) != fileData[0x409FF]) {print("\nНесовместимая сигнатура по адресу ",0x409FF," ",fileData[0x409FF]," поверх ",signature[3]); retkar=1;}
+
+if(optOption("sign")==1 && retkar==1) return;
+
+if(clrChk==0) qr=ask("Запись","Микросхема не чиста. Все равно записать?");
+
+if(optOption("sign")==0 && retkar==1)
+{
+qr=ask("Запись","Сигнатура не совместима! Микросхема может быть испорчена! Продолжить?");
+}
+
+if(qr==0)return;
+
+enter();
+
+if(optOption("vpp")==1)
+{
+qr = ask("Запись","Подключите VPP.");
+if(qr==0)return;
+}
+
+setcontrolpin(pinVP,1);
+
+clock(500000);
+
+var re=1;
+
+print("Write PROG1 ");
+re = write(0x7C,0,0xFF);
+
+if(re != 1)return;
+
+if(optOption("size")==1)
+{
+print("PROG2 ");
+re = write(0x7D,0x10000,0xFF);
+}
+
+if(re != 1)return;
+
+print("CHAR L+H ");
+re = writeChar(0x80,0x40000,0x2F);
+
+if(re != 1)return;
+
+print("PK26","\n");
+re = write(0xC0,0x60000,0x0F);
+
+if(re != 1)return;
+
+setcontrolpin(pinVP,0);
+
+setcontrolpin(pinRST,1);
+
+clock(5);
+
+setcontrolpin(pinRST,0);
+
+print("OK","\n");
+
+}

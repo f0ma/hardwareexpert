@@ -1,0 +1,8 @@
+unix:INCLUDEPATH += /home/f0ma/projects/qextserialport
+unix:QMAKE_LIBDIR += ./home/f0ma/projects/qextserialport/build
+
+win32:INCLUDEPATH += Q:/qextserialport-1.2beta2/src
+win32:QMAKE_LIBDIR += Q:/qextserialport-1.2beta2/lib
+
+win32:INCLUDEPATH += Q:/slang-2.2.4/src
+win32:QMAKE_LIBDIR += Q:/slang-2.2.4/src/gw32objs

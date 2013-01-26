@@ -1,0 +1,458 @@
+%2micom.ru Team \ LOC TOP Read \ Чтение микросхем LOC TOP
+
+var res;
+var buff;
+var ck1,ck2,ck3,ex=0,fe=0;
+
+var crl = [0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x41,0x42,0x43,0x44,0x45,0x46];
+
+def waitReturn()
+{
+while(comRecived()!=4){}
+buff = comRead();
+print(buff,"\n");
+}
+
+def waitReturn1()
+{
+while(comRecived()!=1){}
+buff = comRead();
+if(buff[0]!=0x06)print("!");
+}
+
+def extractByte(first,second)
+{
+var res = 0;
+
+if(first<0x40)res= res + (first-0x30)*0x10;
+else res= (res + (first-0x40+1)*0x10)+0x80;
+
+%else res= (res + (first-0x40+1)*0x10) | 0b10000000;
+
+if(second<0x40)res= res + (second-0x30);
+else res= (res + (second-0x40+1))+0x08;
+
+%else res= (res + (second-0x40+1)) | 0b00001000;
+
+return res;
+}
+
+def extractArray(read)
+{
+var data = ByteArray[256];
+
+var i,j;
+
+var g_offset=0x13;
+
+for(i=0;i<64;i++)
+{
+if(read[i]==0x72)
+{
+g_offset=g_offset+i;
+break;
+}
+}
+var d_offset=0;
+
+for(i=0;i<32;i++)
+{
+data[d_offset] = extractByte(read[g_offset+0x0F],read[g_offset+0x10]);
+d_offset++;
+data[d_offset] = extractByte(read[g_offset+0x14],read[g_offset+0x15]);
+d_offset++;
+data[d_offset] = extractByte(read[g_offset+0x19],read[g_offset+0x1A]);
+d_offset++;
+data[d_offset] = extractByte(read[g_offset+0x1E],read[g_offset+0x1F]);
+d_offset++;
+data[d_offset] = extractByte(read[g_offset+0x24],read[g_offset+0x25]);
+d_offset++;
+data[d_offset] = extractByte(read[g_offset+0x29],read[g_offset+0x2A]);
+d_offset++;
+data[d_offset] = extractByte(read[g_offset+0x2E],read[g_offset+0x2F]);
+d_offset++;
+data[d_offset] = extractByte(read[g_offset+0x33],read[g_offset+0x34]);
+d_offset++;
+
+g_offset+=0x41;
+
+}
+return data;
+}
+
+def init ()
+{
+
+comSetDtr(1);
+comSetRts(1);
+
+wait(500000);
+
+print("\nWaiting...");
+
+var s;
+
+while(1)
+{
+s = comRead();
+if(length(s)>0)
+{
+if(s[0]==0x43) break;
+}
+}
+
+print("\n\nEnter ISP\n");
+
+wait(1000000);
+
+print(comRead());
+
+comWrite(fromHex("ff 02 01 00 40 20 02 22 7a"));
+
+wait(1000000);
+
+print(comRead());
+
+
+
+comOpen(BAUD_115200,PAR_NONE,DATA_8,STOP_1);
+
+comSetDtr(1);
+comSetRts(1);
+
+wait(5000000);
+
+print(comRead());
+
+wait(1000000);
+
+print(comRead());
+
+comWrite(fromHex("ff 02 01 00 40 20 02 22 7a"));
+
+wait(1000000);
+
+print(comRead());
+
+comWrite(fromHex("ff 02 01 01 40 bf 00 fe"));
+
+wait(1000000);
+
+print(comRead());
+
+comWrite(fromHex("ff 02 03 00 40 ab 02 ea 00 00 25"));
+
+wait(1000000);
+
+print(comRead(),"\n");
+
+comWrite(fromHex("0d"));
+
+wait(1000000);
+
+var loader = load("loctoploader.bin");
+
+comWrite(subArray(loader,0x000,133));
+
+waitReturn1();
+
+comWrite(subArray(loader,0x100,133));
+
+waitReturn1();
+
+comWrite(subArray(loader,0x200,133));
+
+waitReturn1();
+
+comWrite(subArray(loader,0x300,133));
+
+waitReturn1();
+
+comWrite(subArray(loader,0x400,133));
+
+waitReturn1();
+
+comWrite(subArray(loader,0x500,133));
+
+waitReturn1();
+
+comWrite(subArray(loader,0x600,133));
+
+waitReturn1();
+
+comWrite(subArray(loader,0x700,133));
+
+waitReturn1();
+
+comWrite(subArray(loader,0x800,133));
+
+waitReturn1();
+
+comWrite(subArray(loader,0x900,133));
+
+waitReturn1();
+
+comWrite(subArray(loader,0xA00,133));
+
+waitReturn1();
+
+print("\n");
+
+wait(100000);
+
+comWrite(fromHex("04"));
+
+%while(comRecived()<12){}
+
+%buff = comRead();
+
+%print("Message:",buff,"\n");
+
+wait(100000);
+
+comWrite(fromHex("04 18 0d 0d"));
+
+wait(100000);
+
+buff = comRead();
+
+%print("Console:",buff,"\n");
+
+wait(100000);
+
+}
+
+def readchip(shiadr,msize)
+{
+
+var hiadr = shiadr;
+var loadr = 0;
+
+var mem = ByteArray [msize*0x10000+0x1000];
+
+var radr = shiadr*0x10000;
+var cnt;
+
+progClear ();
+progMax (256);
+
+pageStore(mem,"SPI Flash");
+
+print("Section ");
+
+for(;hiadr<msize;hiadr++)
+{
+print(" ", hiadr, "  ");
+for(loadr=0;loadr<0x100;loadr++)
+{
+progValue (loadr);
+
+comWrite(fromHex("0d"));
+
+buff = comRead();
+
+var call = fromAscii("r 0xb0000000 256 ");
+
+call[6] = crl[hiadr >> 4];
+call[7] = crl[hiadr & 0x0F];
+call[8] = crl[loadr >> 4];
+call[9] = crl[loadr & 0x0F];
+
+%print(toString(call),"\n");
+
+comWrite(call);
+comWrite(fromHex("0d"));
+comWrite(fromHex("0a"));
+
+cnt=0;
+
+while(comRecived()<2100){};
+wait(1000);
+buff = comRead();
+var data = extractArray(buff);
+
+
+
+%print(data,"\n----------------------\n");
+
+for(cnt=0;cnt<256;cnt++)
+{
+mem[radr]=data[cnt];
+radr++;
+}
+
+if(ex == 1)
+{
+ck1=0;
+ck2=0;
+ck3=0;
+fe=0;
+for(cnt=0;cnt<16;cnt++)
+{
+if(mem[cnt]==0x00 || mem[cnt]==0xFF)fe++;
+if(mem[cnt]==mem[cnt+0x80000])ck1++;
+if(mem[cnt]==mem[cnt+0x100000])ck2++;
+if(mem[cnt]==mem[cnt+0x200000])ck3++;
+%print(mem[cnt]," ",mem[cnt+0x10]," ",ck1,"\n");
+}
+
+if(fe!=0x10)
+{
+if(ck1==0x10)
+{
+mem = subArray(mem,0,0x80000);
+pageOverwrite(mem);
+print("\nSize = 512K\n");
+print("Complete!\n");
+return;
+}
+
+if(ck2==0x10)
+{
+mem = subArray(mem,0,0x100000);
+pageOverwrite(mem);
+print("\nSize = 1024K\n");
+print("Complete!\n");
+return;
+}
+
+if(ck3==0x10)
+{
+mem = subArray(mem,0,0x200000);
+pageOverwrite(mem);
+print("\nSize = 2048K\n");
+print("Complete!\n");
+return;
+}
+}
+}
+pageOverwrite(mem);
+
+}
+
+
+}
+pageStore(mem,"SPI Flash");
+progClear ();
+print("\nComplete!\n");
+}
+
+
+optClear();
+optOption("startadr","Читать с (HEX, старший байт адреса)",0,OPT_HEX);
+optOption("endadr"," До (HEX, 7 = 512K, F = 1M, 1F = 2M)",7,OPT_HEX);
+
+defapi read_adv () : "Чтение LOC-Top (SetAddr)"
+{
+comOpen(BAUD_115200,PAR_NONE,DATA_8,STOP_1);
+
+optDialog();
+
+init();
+
+readchip(optOption("startadr"),optOption("endadr"));
+
+comClose();
+}
+
+
+
+
+def do_call(call)
+{
+comWrite(fromHex("0d"));
+
+buff = comRead();
+
+comWrite(call);
+comWrite(fromHex("0d"));
+comWrite(fromHex("0a"));
+
+var cnt=0;
+
+while(comRecived()<2105){};
+buff = comRead();
+
+return extractArray(buff);
+
+
+}
+
+
+defapi size_check () : "Определение размера LOC-Top"
+{
+comOpen(BAUD_115200,PAR_NONE,DATA_8,STOP_1);
+
+init();
+
+var data1 = do_call(fromAscii("r 0xb0000000 256 "));
+var data2 = do_call(fromAscii("r 0xb0080000 256 "));
+var data3 = do_call(fromAscii("r 0xb0100000 256 "));
+var data4 = do_call(fromAscii("r 0xb0200000 256 "));
+
+var i;
+
+for(i=0;i<100;i++)
+{
+if(data1[i]!=0xff && data1[i]!=0x00)break;
+}
+
+if(i==100)
+{
+print("Flash-память чиста или дамп поврежден. Установите размер вручную!\n");
+return 0;
+}
+
+for(i=0;i<100;i++)
+{
+if(data1[i]!=data2[i])break;
+}
+
+if(i==100)
+{
+print("size = 512K\n");
+return 1;
+}
+
+for(i=0;i<100;i++)
+{
+if(data1[i]!=data3[i])break;
+}
+
+if(i==100)
+{
+print("size = 1024K\n");
+return 1;
+}
+
+for(i=0;i<100;i++)
+{
+if(data1[i]!=data4[i])break;
+}
+
+if(i==100)
+{
+print("size = 2048K\n");
+return 1;
+}
+
+comSetDtr(0);
+comSetRts(0);
+
+comClose();
+}
+
+
+defapi read_512 () : "Чтение LOC-Top"
+{
+ex = size_check ();
+
+comOpen(BAUD_115200,PAR_NONE,DATA_8,STOP_1);
+
+readchip(0,32);
+
+comSetDtr(0);
+comSetRts(0);
+
+comClose();
+}
