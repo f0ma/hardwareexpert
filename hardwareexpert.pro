@@ -131,7 +131,7 @@ QMAKE_CLEAN += -rf doc
 
 ver.target = ver
 
-COMMIT = $$system(git --git-dir=$$PWD rev-parse --short HEAD)
+COMMIT = $$system(git --git-dir=$$PWD/.git rev-parse --short HEAD)
 
 ver.commands +=	echo \"//Autogenetated file. Do not edit.\" > $(OBJECTS_DIR)/version.h ;
 ver.commands +=	echo \"\" >> $(OBJECTS_DIR)/version.h ;
