@@ -19,7 +19,7 @@
 #include "slangwrapper.h"
 #include "Timer.h"
 
-#include "qextserialbase.h"
+#include "qextserialport.h"
 
 namespace SLangWrapperIFaces //указатели на внешние интерфейсы
 {

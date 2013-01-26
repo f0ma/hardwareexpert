@@ -1,3 +1,6 @@
+unix:LIBS += -lqextserialport
+win32:LIBS += -lqextserialport-1.2
+
 unix:INCLUDEPATH += /home/f0ma/projects/qextserialport
 unix:QMAKE_LIBDIR += /home/f0ma/projects/qextserialport/build
 
@@ -6,3 +9,9 @@ win32:QMAKE_LIBDIR += Q:/qextserialport-1.2beta2/lib
 
 win32:INCLUDEPATH += Q:/slang-2.2.4/src
 win32:QMAKE_LIBDIR += Q:/slang-2.2.4/src/gw32objs
+
+win32:SLANG_DLLDIR = Q:/slang-2.2.4/src/gw32objs
+win32:QExtSerialPort_DLLDIR = Q:/qextserialport-1.2beta2/lib
+win32:WinIO_DLLDIR = Q:/WinIo/Binaries
+
+win32:TXT2TAGS = python C:/Python27/txt2tags-2.6/txt2tags

@@ -91,11 +91,6 @@ DOCS += doc/index.t2t \
 
 LIBS += -lslang 
 
-unix:LIBS += -lqextserialport
-win32:LIBS += -lqextserialport-1.2
-
-
-
 win32:QMAKE_LFLAGS+= -shared-libgcc 
 
 unix:DEFINES = _TTY_POSIX_
@@ -104,11 +99,9 @@ CONFIG += qt \
     thread \
     warn_on \
 
+TXT2TAGS = txt2tags
+	
 include( hardwareexpert-build-lib-paths.pri.user )
-
-!include( hardwareexpert-build-lib-paths.pri.user ) {
-     message( "User library path file hardwareexpert-build-lib-paths.pri.user  not found!" )
- }
 
 RESOURCES += \
     resources.qrc
@@ -121,7 +114,7 @@ doc.target = doc
 doc.commands += mkdir $(OBJECTS_DIR)/doc ;
 for(FILE,DOCS){
 		NFILE = $$replace(FILE,t2t,html)
-                doc.commands +=	txt2tags -t html --encoding=utf-8 -o  $(OBJECTS_DIR)$$NFILE $$PWD/$$FILE ;
+                doc.commands +=	$$TXT2TAGS -t html --encoding=utf-8 -o  $(OBJECTS_DIR)$$NFILE $$PWD/$$FILE ;
 		doc.depends += $$PWD/$$FILE
 }
 
@@ -148,7 +141,7 @@ QMAKE_CLEAN += -r version.h
 tr.target = tr
 
 isEmpty(QMAKE_LRELEASE) {
-    win32:QMAKE_LRELEASE = $$[QT_INSTALL_BINS]\lrelease.exe
+    win32:QMAKE_LRELEASE = $$[QT_INSTALL_BINS]/lrelease.exe
     else:QMAKE_LRELEASE = $$[QT_INSTALL_BINS]/lrelease
 }
 
@@ -170,10 +163,21 @@ deploy.target = deploy
 deploy.commands += mkdir $(OBJECTS_DIR)/scripts ;
 deploy.commands += cp $$PWD/tests/* $(OBJECTS_DIR)/scripts/ ;
 deploy.commands += cp $$PWD/scripts/* $(OBJECTS_DIR)/scripts/ ;
-deploy.commands += rm $(OBJECTS_DIR)/*.o ;
-deploy.commands += rm $(OBJECTS_DIR)/*.cpp ;
-deploy.commands += rm $(OBJECTS_DIR)/*.h ;
-deploy.commands += rm Makefile 
+deploy.commands += cp $$PWD/LICENSE $(OBJECTS_DIR) ;
+win32:deploy.commands += cp $$SLANG_DLLDIR/*.dll $(OBJECTS_DIR) ;
+win32:deploy.commands += cp $$QExtSerialPort_DLLDIR/*.dll $(OBJECTS_DIR) ;
+win32:deploy.commands += cp $$WinIO_DLLDIR/*.dll $(OBJECTS_DIR) ;
+win32:deploy.commands += cp $$WinIO_DLLDIR/*.sys $(OBJECTS_DIR) ;
+win32:deploy.commands += cp \"$$[QT_INSTALL_PREFIX]\\lib\\QtCore4.dll\" $(OBJECTS_DIR) ;
+win32:deploy.commands += cp \"$$[QT_INSTALL_PREFIX]\\lib\\QtGui4.dll\" $(OBJECTS_DIR) ;
+win32:deploy.commands += cp \"$$[QT_INSTALL_PREFIX]\\translations\\qt_ru.qm\" $(OBJECTS_DIR) ;
 
 QMAKE_EXTRA_TARGETS += deploy
 
+cleandeploy.target = cleandeploy
+cleandeploy.commands += rm $(OBJECTS_DIR)/*.o ;
+cleandeploy.commands += rm $(OBJECTS_DIR)/*.cpp ;
+cleandeploy.commands += rm $(OBJECTS_DIR)/*.h ;
+cleandeploy.commands += rm Makefile ;
+
+QMAKE_EXTRA_TARGETS += cleandeploy

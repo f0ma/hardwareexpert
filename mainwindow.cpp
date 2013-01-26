@@ -619,7 +619,7 @@ void MainWindow::onProgressTimerTick()
 
 void MainWindow::on_actionSearch_String_triggered()
 {
-    HexEditorWidget* v = dynamic_cast<HexEditorWidget*>(ui->twHex->currentWidget());
+	HexEditorWidget* v = dynamic_cast<HexEditorWidget*>(ui->twHex->currentWidget());
     if (v==NULL)return;
     QByteArray br = v->data();
     QByteArray akk;
@@ -651,9 +651,10 @@ void MainWindow::on_actionSearch_String_triggered()
 
 void MainWindow::on_actionSearch_triggered()
 {
-    SearchDialog * sl = new SearchDialog(this);
     HexEditorWidget* v = dynamic_cast<HexEditorWidget*>(ui->twHex->currentWidget());
-
+    if (v==NULL)return;
+	
+	SearchDialog * sl = new SearchDialog(this);
     sl->setText(ui->twHex->tabText(ui->twHex->currentIndex()));
     sl->setHexEditor(v);
     sl->show();
@@ -661,6 +662,7 @@ void MainWindow::on_actionSearch_triggered()
 
 void MainWindow::on_actionDiff_triggered()
 {
+	if (ui->twHex->count() < 2)return;
     CompairDialog * cd = new CompairDialog(this);
     for(int i=0;i<ui->twHex->count();i++)
     {
