@@ -168,9 +168,15 @@ win32:deploy.commands += cp $$SLANG_DLLDIR/*.dll $(OBJECTS_DIR) ;
 win32:deploy.commands += cp $$QExtSerialPort_DLLDIR/*.dll $(OBJECTS_DIR) ;
 win32:deploy.commands += cp $$WinIO_DLLDIR/*.dll $(OBJECTS_DIR) ;
 win32:deploy.commands += cp $$WinIO_DLLDIR/*.sys $(OBJECTS_DIR) ;
-win32:deploy.commands += cp \"$$[QT_INSTALL_PREFIX]\\lib\\QtCore4.dll\" $(OBJECTS_DIR) ;
-win32:deploy.commands += cp \"$$[QT_INSTALL_PREFIX]\\lib\\QtGui4.dll\" $(OBJECTS_DIR) ;
-win32:deploy.commands += cp \"$$[QT_INSTALL_PREFIX]\\translations\\qt_ru.qm\" $(OBJECTS_DIR) ;
+win32:deploy.commands += cp \"$$[QT_INSTALL_PREFIX]/lib/QtCore4.dll\" $(OBJECTS_DIR) ;
+win32:deploy.commands += cp \"$$[QT_INSTALL_PREFIX]/lib/QtGui4.dll\" $(OBJECTS_DIR) ;
+win32:deploy.commands += cp \"$$[QT_INSTALL_PREFIX]/translations/qt_ru.qm\" $(OBJECTS_DIR) ;
+win32:CPPPATH = $$system($$quote(for %i in (gcc.exe) do @echo.%~$PATH:i))
+win32:CPPPATH = $$replace(CPPPATH,\\\\,/)
+win32:CPPPATH = $$replace(CPPPATH,gcc.exe,)
+win32:deploy.commands += cp \"$$CPPPATH\\libgcc_s_dw2-1.dll\" $(OBJECTS_DIR) ;
+win32:deploy.commands += cp \"$$CPPPATH\\libstdc++-6.dll\" $(OBJECTS_DIR) ;
+win32:deploy.commands += cp \"$$CPPPATH\\mingwm10.dll\" $(OBJECTS_DIR) ;
 
 QMAKE_EXTRA_TARGETS += deploy
 
