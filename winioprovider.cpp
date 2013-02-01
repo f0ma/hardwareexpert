@@ -20,12 +20,20 @@
 
 WinIOProvider::WinIOProvider()
 {
-lib.setFileName("winio32.dll");
 }
 
 int WinIOProvider::load()
 {
+lib.setFileName("winio32.dll");
 lib.load();
+if(!lib.isLoaded())
+{
+lib.setFileName("winio64.dll");
+lib.load();
+}
+
+
+
 if(!lib.isLoaded()) return 0;
 
     InitializeWinIo = (PrototypeBoolVoid ) lib.resolve("InitializeWinIo");
