@@ -18,22 +18,6 @@
 
 #include "winioprovider.h"
 
-#ifdef Q_WS_WIN
-BOOL Is64BitWindows()
-{
-#if defined(_WIN64)
-    return TRUE;  // 64-bit programs run only on Win64
-#elif defined(_WIN32)
-    // 32-bit programs run on both 32-bit and 64-bit Windows
-    // so must sniff
-    BOOL f64 = FALSE;
-    return IsWow64Process(GetCurrentProcess(), &f64) && f64;
-#else
-    return FALSE; // Win64 does not support Win16
-#endif
-}
-#endif
-
 WinIOProvider::WinIOProvider()
 {
 }
@@ -41,11 +25,6 @@ WinIOProvider::WinIOProvider()
 int WinIOProvider::load()
 {
 lib.setFileName("winio32.dll");
-
-#ifdef Q_WS_WIN
-if (Is64BitWindows()) lib.setFileName("winio64.dll");
-else lib.setFileName("winio32.dll");
-#endif
 
 lib.load();
 

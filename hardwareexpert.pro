@@ -160,9 +160,6 @@ QMAKE_CLEAN += -r *.qm
 
 
 deploy.target = deploy
-deploy.commands += mkdir $(OBJECTS_DIR)/scripts ;
-deploy.commands += cp $$PWD/tests/* $(OBJECTS_DIR)/scripts/ ;
-deploy.commands += cp $$PWD/scripts/* $(OBJECTS_DIR)/scripts/ ;
 deploy.commands += cp $$PWD/LICENSE $(OBJECTS_DIR) ;
 win32:deploy.commands += cp $$SLANG_DLLDIR/*.dll $(OBJECTS_DIR) ;
 win32:deploy.commands += cp $$QExtSerialPort_DLLDIR/*.dll $(OBJECTS_DIR) ;
@@ -177,6 +174,10 @@ win32:CPPPATH = $$replace(CPPPATH,gcc.exe,)
 win32:deploy.commands += cp \"$$CPPPATH\\libgcc_s_dw2-1.dll\" $(OBJECTS_DIR) ;
 win32:deploy.commands += cp \"$$CPPPATH\\libstdc++-6.dll\" $(OBJECTS_DIR) ;
 win32:deploy.commands += cp \"$$CPPPATH\\mingwm10.dll\" $(OBJECTS_DIR) ;
+deploy.commands += mkdir $(OBJECTS_DIR)/scripts ;
+deploy.commands += cp $$PWD/tests/* $(OBJECTS_DIR)/scripts/ ;
+deploy.commands += cp $$PWD/scripts/* $(OBJECTS_DIR)/scripts/ ;
+
 
 QMAKE_EXTRA_TARGETS += deploy
 

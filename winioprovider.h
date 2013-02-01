@@ -5,6 +5,7 @@
 #include <QLibrary>
 
 #ifdef Q_WS_WIN
+#define _WIN32_WINNT 0x501
 #include <windows.h>
 #else
 typedef unsigned int UINT;
