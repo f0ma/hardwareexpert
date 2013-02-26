@@ -21,6 +21,11 @@
 #include "lptdrvprovider.h"
 #include "winioprovider.h"
 
+#include "directiointerface.h"
+#include "consoledirectiointerface.h"
+#include "lptwiniodirectiointerface.h"
+#include "ftdidioportinterface.h"
+
 namespace Ui {
     class DriverDialog;
 }
@@ -37,6 +42,7 @@ public:
     ComPortInterface * getCurrentComPort();
     LptPortInterface * getCurrentLptPort();
     I2cPortInterface * getCurrentI2cPort();
+    DirectIOInterface * getCurrentDioPort();
 
 private:
     Ui::DriverDialog *ui;
@@ -45,6 +51,7 @@ private:
     QList <AbstractHardwareInterface *> comInterfaces;
     QList <AbstractHardwareInterface *> lptInterfaces;
     QList <AbstractHardwareInterface *> i2cInterfaces;
+    QList <AbstractHardwareInterface *> dioInterfaces;
 
     void updateList(QComboBox * list,QStringList values);
 
@@ -55,6 +62,8 @@ private slots:
     void on_cbI2cIfSelect_currentIndexChanged(int index);
     void on_cbLptIfSelect_currentIndexChanged(int index);
     void on_cbComIfSelect_currentIndexChanged(int index);
+    void on_cbDioIfSelect_currentIndexChanged(int index);
+    void on_cbDioPortName_currentIndexChanged(const QString &arg1);
 };
 
 #endif // DRIVERDIALOG_H

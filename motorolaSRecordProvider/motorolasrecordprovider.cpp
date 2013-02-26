@@ -16,6 +16,7 @@ bool MotorolaSRecordProvider::loadFromMotFile(QString name, QByteArray & data)
 
 bool MotorolaSRecordProvider::loadFromMotFile(QString name, QByteArray & data,MotorolaSRecordHeader & h)
 {
+    Q_UNUSED(h);
     int lastAddress = 0;
     unsigned int currentAddress;
     int bytesCount = 0;
@@ -50,13 +51,13 @@ bool MotorolaSRecordProvider::loadFromMotFile(QString name, QByteArray & data,Mo
 
         bytesCount = record[1];
 
-        if(record[0]==0) // header record
+        if((int)record[0]==0) // header record
         {
             // do nothing. no examples found
             continue;
         }
 
-        if(record[0]==1) // 2 address bytes
+        if((int)record[0]==1) // 2 address bytes
         {
             ca = record.left(4).right(2);
             unsigned char a = ca.at(0);
@@ -66,7 +67,7 @@ bool MotorolaSRecordProvider::loadFromMotFile(QString name, QByteArray & data,Mo
             bytesCount=bytesCount-1-2;
         }
 
-        if(record[0]==2) // 3 address bytes
+        if((int)record[0]==2) // 3 address bytes
         {
             ca = record.left(5).right(3);
             unsigned char a = ca.at(0);
@@ -76,7 +77,7 @@ bool MotorolaSRecordProvider::loadFromMotFile(QString name, QByteArray & data,Mo
             bytesCount=bytesCount-1-3;
         }
 
-        if(record[0]==3) // 4 address bytes
+        if((int)record[0]==3) // 4 address bytes
         {
             ca = record.left(6).right(4);
             unsigned char a = ca.at(0);
@@ -90,7 +91,7 @@ bool MotorolaSRecordProvider::loadFromMotFile(QString name, QByteArray & data,Mo
 
         //other type record not containing data
 
-        if(record[0]==4 || record[0]==5 || record[0]==6 || record[0]==7 || record[0]==8 || record[0]==9)
+        if((int)record[0]==4 || (int)record[0]==5 || (int)record[0]==6 || (int)record[0]==7 || (int)record[0]==8 || (int)record[0]==9)
         {
             continue;
         }
@@ -99,7 +100,7 @@ bool MotorolaSRecordProvider::loadFromMotFile(QString name, QByteArray & data,Mo
         record = record.left(record.length()-1).right(bytesCount);
 
 
-        if(currentAddress +record.length() > data.length())
+        if(currentAddress +record.length() > abs(data.length()))
         {
             QByteArray br;
             br.fill(0x00,currentAddress+record.length());
@@ -130,6 +131,9 @@ bool MotorolaSRecordProvider::saveToMotFile(QByteArray data,QString name)
 
 bool MotorolaSRecordProvider::saveToMotFile(QByteArray data,QString name,MotorolaSRecordHeader h)
 {
+    Q_UNUSED(data);
+    Q_UNUSED(name);
+    Q_UNUSED(h);
     return false;
 }
 

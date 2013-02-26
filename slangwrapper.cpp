@@ -361,13 +361,12 @@ SLangWrapper::SLangWrapper()
     SLadd_intrinsic_function ((char *) "i2cClose", (FVOID_STAR) instr_I2CClose, SLANG_VOID_TYPE,0);
 
 
-    SLadd_intrinsic_function ((char *) "dioSetPin", (FVOID_STAR) instr_DIOSetPin, SLANG_VOID_TYPE,2,SLANG_INT_TYPE,SLANG_INT_TYPE);
-    SLadd_intrinsic_function ((char *) "dioSetPin", (FVOID_STAR) instr_DIOGetPin, SLANG_INT_TYPE,1,SLANG_INT_TYPE);
+    SLadd_intrinsic_function ((char *) "dioOpen", (FVOID_STAR) instr_DIOOpen, SLANG_INT_TYPE,0);
     SLadd_intrinsic_function ((char *) "dioSetPort", (FVOID_STAR) instr_DIOSetPort, SLANG_VOID_TYPE,2,SLANG_INT_TYPE,SLANG_INT_TYPE);
     SLadd_intrinsic_function ((char *) "dioGetPort", (FVOID_STAR) instr_DIOGetPort, SLANG_INT_TYPE,1,SLANG_INT_TYPE);
-
-    SLadd_intrinsic_function ((char *) "dioSetPinMode", (FVOID_STAR) instr_DIOSetPinMode, SLANG_VOID_TYPE,2,SLANG_INT_TYPE,SLANG_INT_TYPE);
+    SLadd_intrinsic_function ((char *) "dioSetPinMode", (FVOID_STAR) instr_DIOSetPinMode, SLANG_VOID_TYPE,3,SLANG_INT_TYPE,SLANG_INT_TYPE,SLANG_INT_TYPE);
     SLadd_intrinsic_function ((char *) "dioSetPortMode", (FVOID_STAR) instr_DIOSetPortMode, SLANG_VOID_TYPE,2,SLANG_INT_TYPE,SLANG_INT_TYPE);
+    SLadd_intrinsic_function ((char *) "dioClose", (FVOID_STAR) instr_DIOClose, SLANG_VOID_TYPE,0);
 
     SLadd_intrinsic_variable ((char *) "OUT",& SLangWrapperConst::iDIO_OUT, SLANG_INT_TYPE, 1);
     SLadd_intrinsic_variable ((char *) "IN",& SLangWrapperConst::iDIO_IN, SLANG_INT_TYPE, 1);
@@ -1281,23 +1280,22 @@ void SLangWrapper::instr_optiondialog ()
     console->optionDialog(&optList);
 }
 
-void SLangWrapper::instr_DIOSetPin(int * pin,int * val)
+int SLangWrapper::instr_DIOOpen()
 {
-checkArgCount(2);
-if (*val == SLangWrapperConst::iFALSE) dioPort->setPinValue(*pin,false);
-else dioPort->setPinValue(*pin,true);
+    checkArgCount0(0);
+    return dioPort->open();
 }
 
-int SLangWrapper::instr_DIOGetPin(int * pin)
+void SLangWrapper::instr_DIOClose()
 {
-    checkArgCount0(1);
-    return dioPort->getPinValue(*pin);
+    checkArgCount(0);
+    dioPort->close();
 }
 
 void SLangWrapper::instr_DIOSetPort(int * port,int * val)
 {
     checkArgCount(2);
-    dioPort->setPinValue(*port,*val);
+    dioPort->setPortValue(*port,*val);
 }
 
 int SLangWrapper::instr_DIOGetPort(int * port)
@@ -1306,11 +1304,11 @@ int SLangWrapper::instr_DIOGetPort(int * port)
     return dioPort->getPortValue(*port);
 }
 
-void SLangWrapper::instr_DIOSetPinMode (int * pin, int *mode)
+void SLangWrapper::instr_DIOSetPinMode (int * port, int * pin, int *mode)
 {
     checkArgCount(2);
-    if(*mode == SLangWrapperConst::iDIO_IN) dioPort->setPinMode(*pin,DirectIOInterface::IO_MODE_INPUT);
-    else  dioPort->setPinMode(*pin,DirectIOInterface::IO_MODE_OUTPUT);
+    if(*mode == SLangWrapperConst::iDIO_IN) dioPort->setPinMode(*port,*pin,DirectIOInterface::IO_MODE_INPUT);
+    else  dioPort->setPinMode(*port,*pin,DirectIOInterface::IO_MODE_OUTPUT);
 }
 
 void SLangWrapper::instr_DIOSetPortMode (int * port, int *mode)

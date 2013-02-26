@@ -21,11 +21,13 @@
 ConsoleLptPortInterface::ConsoleLptPortInterface()
 {
     con=NULL;
+    opened = false;
 }
 
 bool ConsoleLptPortInterface::open ()
 {
     con->print(QObject::tr("Console LPT port opened\n"));
+    opened = true;
     return true;
 }
 
@@ -66,7 +68,8 @@ void ConsoleLptPortInterface::setDataModeIn(bool in)
 
 void ConsoleLptPortInterface::close ()
 {
-    con->print(QObject::tr("Console LPT port closed\n"));
+    if(opened)con->print(QObject::tr("Console LPT port closed\n"));
+    opened = false;
 }
 
 void ConsoleLptPortInterface::setConsole(ConsoleInterface * acon)

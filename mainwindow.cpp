@@ -92,15 +92,16 @@ MainWindow::MainWindow(QWidget *parent) :
     imp->setHexFilesMenager(hfm);
     imp->setConsoleInterfaceMenager(ci);
 
-    onScriptStoped();
-
     driverWindow = new DriverDialog(this);
     driverWindow->setModal(true);
+
+    onScriptStoped();
 
     cis->print("Hardware configuration:\n");
     cis->print("COM port: "+driverWindow->getCurrentComPort()->description()+"\n");
     cis->print("LPT port: "+driverWindow->getCurrentLptPort()->description()+"\n");
     cis->print("I2C port: "+driverWindow->getCurrentI2cPort()->description()+"\n");
+    cis->print("DIO port: "+driverWindow->getCurrentDioPort()->description()+"\n");
 
     optionWindow = new OptionsDialog(this);
     optionWindow->setModal(true);
@@ -321,12 +322,20 @@ void MainWindow::onScriptStoped()
         waitTimer->stop();
         ui->waitLabel->setText(" ");
 
+        if(driverWindow->initComplete)
+        {
+        driverWindow->getCurrentComPort()->close();
+        driverWindow->getCurrentDioPort()->close();
+        driverWindow->getCurrentI2cPort()->close();
+        driverWindow->getCurrentLptPort()->close();
+        }
         ui->pbExecute->setEnabled(true);
         ui->runButton->setEnabled(true);
         ui->stopButton->setEnabled(false);
         ui->menuOptions->setEnabled(true);
         ui->lwApi->setEnabled(true);
         hfm->unLockEditor();
+
 }
 
 
@@ -356,6 +365,7 @@ void MainWindow::on_runButton_clicked()
     itptr->setComPortInterface(driverWindow->getCurrentComPort());
     itptr->setLptPortInterface(driverWindow->getCurrentLptPort());
     itptr->setI2cPortInterface(driverWindow->getCurrentI2cPort());
+    itptr->setDirectIoPortInterface(driverWindow->getCurrentDioPort());
 
     itptr->setScriptPath(codeFileManager->currentCodePath());
 
@@ -490,6 +500,7 @@ void MainWindow::on_pbExecute_clicked()
     itptr->setComPortInterface(driverWindow->getCurrentComPort());
     itptr->setLptPortInterface(driverWindow->getCurrentLptPort());
     itptr->setI2cPortInterface(driverWindow->getCurrentI2cPort());
+    itptr->setDirectIoPortInterface(driverWindow->getCurrentDioPort());
 
     itptr->setScriptPath(codeFileManager->currentCodePath());
 

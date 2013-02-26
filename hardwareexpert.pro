@@ -34,7 +34,11 @@ SOURCES += main.cpp \
     hexfilesmenager.cpp \
     motorolaSRecordProvider/motorolasrecordprovider.cpp \
     importexportmenager.cpp \
-    stOsdFile/stOsdFile.cpp
+    stOsdFile/stOsdFile.cpp \
+    ftdiinterfaceprovider.cpp \
+    consoledirectiointerface.cpp \
+    lptwiniodirectiointerface.cpp \
+    ftdidioportinterface.cpp
 HEADERS += mainwindow.h \
     slangthread.h \
     comportinterface.h \
@@ -74,7 +78,11 @@ HEADERS += mainwindow.h \
     codeeditor/slhsyntaxhighlighter.h \
     motorolaSRecordProvider/motorolasrecordprovider.h \
     importexportmenager.h \
-    stOsdFile/stOsdFile.h
+    stOsdFile/stOsdFile.h \
+    ftdiinterfaceprovider.h \
+    consoledirectiointerface.h \
+    lptwiniodirectiointerface.h \
+    ftdidioportinterface.h
 FORMS += mainwindow.ui \
     aboutwindow.ui \
     helpwindow.ui \
@@ -89,7 +97,8 @@ DOCS += doc/index.t2t \
 	doc/gui.t2t \
 	doc/general.t2t \
 
-LIBS += -lslang 
+LIBS += -lslang \
+        -lqextserialport
 
 win32:QMAKE_LFLAGS+= -shared-libgcc 
 

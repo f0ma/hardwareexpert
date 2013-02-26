@@ -27,7 +27,7 @@
 
 class SLangWrapper : public QObject
 {
-    Q_OBJECT;
+    Q_OBJECT
 
     SLangThread * sltr; // Указатель на поток выполнения
     QMap <QString,QString> api; // Список имен обратных вызовов скрипта
@@ -189,12 +189,11 @@ private:
 
     /// Функции по работе с DIO портом
 
-    static void instr_DIOSetPin(int * pin,int * val);
-    static int instr_DIOGetPin(int * pin);
+    static int instr_DIOOpen();
+    static void instr_DIOClose();
     static void instr_DIOSetPort(int * port,int * val);
     static int instr_DIOGetPort(int * port);
-
-    static void instr_DIOSetPinMode (int * pin, int *mode);
+    static void instr_DIOSetPinMode (int * port, int *pin, int *mode);
     static void instr_DIOSetPortMode (int * port, int *mode);
 
     /// Функции по работе с USB портом

@@ -34,19 +34,29 @@ DriverDialog::DriverDialog(QWidget *parent) :
     ConsoleComPortInterface * cCom = new ConsoleComPortInterface();
     ConsoleLptPortInterface * cLpt = new ConsoleLptPortInterface();
     ConsoleI2cInterface * cI2c = new ConsoleI2cInterface();
+    ConsoleDirectIOInterface * cDio = new ConsoleDirectIOInterface();
 
     MainWindow * mw = dynamic_cast<MainWindow *>(this->parent());
 
     cCom->setConsole(mw->getConsole());
     cLpt->setConsole(mw->getConsole());
     cI2c->setConsole(mw->getConsole());
+    cDio->setConsole(mw->getConsole());
+
+    WinIOLptPortInterface * wioc = new WinIOLptPortInterface();
+
+    LptWinIODirectIOInterface * wiod = new LptWinIODirectIOInterface();
+    wiod->setInterface(wioc);
 
     interfaces << cCom
                << new ExcComInterface()
                << cLpt
-               << new WinIOLptPortInterface()
+               << wioc
                << cI2c
-               << new LptDrvI2cInterface();
+               << new LptDrvI2cInterface()
+               << cDio
+               << wiod
+               << new FtdiDioPortInterface();
 
     AbstractHardwareInterface * i;
 
@@ -61,6 +71,7 @@ DriverDialog::DriverDialog(QWidget *parent) :
             if(i->type()==AbstractHardwareInterface::INTERFACE_TYPE_COM) comInterfaces << i;
             if(i->type()==AbstractHardwareInterface::INTERFACE_TYPE_LPT) lptInterfaces << i;
             if(i->type()==AbstractHardwareInterface::INTERFACE_TYPE_I2C) i2cInterfaces << i;
+            if(i->type()==AbstractHardwareInterface::INTERFACE_TYPE_DIRECT_IO) dioInterfaces << i;
         }
         else ui->deviceInfo->append(i->name() + " ("+i->description() +tr("):[Error] - ")+i->reason());
         }
@@ -83,28 +94,44 @@ DriverDialog::DriverDialog(QWidget *parent) :
         ui->cbI2cIfSelect->addItem(i->description());
     }
 
+    foreach(i,dioInterfaces)
+    {
+        ui->cbDioIfSelect->addItem(i->description());
+    }
+
     use_settings;
 
     ui->cbComIfSelect->setCurrentIndex(settings.value("drivers/currentComDriver",0).toInt());
     ui->cbLptIfSelect->setCurrentIndex(settings.value("drivers/currentLptDriver",0).toInt());
     ui->cbI2cIfSelect->setCurrentIndex(settings.value("drivers/currentI2cDriver",0).toInt());
+    ui->cbDioIfSelect->setCurrentIndex(settings.value("drivers/currentDioDriver",0).toInt());
 
     initComplete = true;
 }
 
 ComPortInterface * DriverDialog::getCurrentComPort()
 {
+    if (comInterfaces.length()==0) return NULL;
     return dynamic_cast <ComPortInterface *> (comInterfaces[ui->cbComIfSelect->currentIndex()]);
 }
 
 LptPortInterface * DriverDialog::getCurrentLptPort()
 {
+    if (lptInterfaces.length()==0) return NULL;
     return dynamic_cast <LptPortInterface *> (lptInterfaces[ui->cbLptIfSelect->currentIndex()]);
 }
 
 I2cPortInterface * DriverDialog::getCurrentI2cPort()
 {
+    if (i2cInterfaces.length()==0) return NULL;
+    if(ui->cbI2cIfSelect->currentIndex()<0) return dynamic_cast <I2cPortInterface *> (i2cInterfaces[0]);
     return dynamic_cast <I2cPortInterface *> (i2cInterfaces[ui->cbI2cIfSelect->currentIndex()]);
+}
+
+DirectIOInterface * DriverDialog::getCurrentDioPort()
+{
+    if (dioInterfaces.length()==0) return NULL;
+    return dynamic_cast <DirectIOInterface *> (dioInterfaces[ui->cbDioIfSelect->currentIndex()]);
 }
 
 
@@ -139,13 +166,13 @@ void DriverDialog::on_cbLptIfSelect_currentIndexChanged(int index)
 
 void DriverDialog::on_cbI2cIfSelect_currentIndexChanged(int index)
 {
+    if(!initComplete)return;
+
     updateList(ui->cbI2cPortName,getCurrentI2cPort()->getPortList());
 
     use_settings;
 
     ui->cbI2cPortName->setCurrentIndex(settings.value("drivers/"+getCurrentI2cPort()->name(),0).toInt());
-
-    if(!initComplete)return;
 
     settings.setValue("drivers/currentI2cDriver",index);
 }
@@ -198,4 +225,27 @@ void DriverDialog::on_cbI2cPortName_currentIndexChanged(QString n)
 
     use_settings;
     settings.setValue("drivers/"+getCurrentI2cPort()->name(),ui->cbI2cPortName->currentIndex());
+}
+
+void DriverDialog::on_cbDioIfSelect_currentIndexChanged(int index)
+{
+    updateList(ui->cbDioPortName,getCurrentDioPort()->getPortList());
+
+    use_settings;
+
+    ui->cbI2cPortName->setCurrentIndex(settings.value("drivers/"+getCurrentDioPort()->name(),0).toInt());
+
+    if(!initComplete)return;
+
+    settings.setValue("drivers/currentDioDriver",index);
+}
+
+void DriverDialog::on_cbDioPortName_currentIndexChanged(const QString &arg1)
+{
+    getCurrentDioPort()->setPortName(arg1);
+
+    if(!initComplete)return;
+
+    use_settings;
+    settings.setValue("drivers/"+getCurrentDioPort()->name(),ui->cbDioPortName->currentIndex());
 }

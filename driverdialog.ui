@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>597</width>
-    <height>242</height>
+    <height>476</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,6 +39,13 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>DIO Interface</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>
@@ -51,6 +58,9 @@
        </item>
        <item>
         <widget class="QComboBox" name="cbI2cIfSelect"/>
+       </item>
+       <item>
+        <widget class="QComboBox" name="cbDioIfSelect"/>
        </item>
       </layout>
      </item>
@@ -69,6 +79,9 @@
        <item>
         <widget class="QComboBox" name="cbI2cPortName"/>
        </item>
+       <item>
+        <widget class="QComboBox" name="cbDioPortName"/>
+       </item>
       </layout>
      </item>
     </layout>
@@ -80,7 +93,7 @@
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
    </item>

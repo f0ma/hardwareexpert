@@ -8,6 +8,7 @@
 class ConsoleLptPortInterface : public LptPortInterface
 {
     ConsoleInterface * con;
+    bool opened;
 
 public:
     ConsoleLptPortInterface();
