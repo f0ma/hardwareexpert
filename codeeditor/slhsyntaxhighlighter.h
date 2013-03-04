@@ -48,9 +48,9 @@ public:
         "comOpen|comClose|comWrite|comRead|comRecived|comSetDtr|comSetRts|comSetTimeout|"
         "lptOpen|lptSetData|lptGetData|lptSetCtrl|lptGetStat|lptSetMode|lptClose|"
         "i2cOpen|i2cAddWrite|i2cAddRead|i2cAddStop|i2cAddWait|i2cWrite|i2cRead|i2cWriteRead|i2cAskCheck|i2cIsOk|i2cGetBuffer|i2cGetBufferLength|i2cPreform|i2cClose|"
-        "dioSetPin|dioSetPin|dioSetPort|dioGetPort|dioSetPinMode|dioSetPortMode|"
+        "dioSetPort|dioGetPort|dioSetPinMode|dioSetPortMode|dioOpen|dioClose|"
         "usbOpen|usbClose|usbReset|usbBulkRead|usbBulkWrite|usbControlMsg|configLoad|configValue|"
-        "TRUE|FALSE|OUT|IN|HEX|DEC|BIN|BAUD_9600|BAUD_19200|BAUD_115200|DATA_5|DATA_6|DATA_7|DATA_8|PAR_NONE"
+        "TRUE|FALSE|OUT|IN|HEX|DEC|BIN|BAUD_9600|BAUD_19200|BAUD_115200|DATA_5|DATA_6|DATA_7|DATA_8|PAR_NONE|"
         "PAR_ODD|PAR_EVEN|STOP_1|STOP_2|OPT_CHK|OPT_DEC|OPT_HEX|OPT_LIST|OPT_STR)\\b"
          );
 

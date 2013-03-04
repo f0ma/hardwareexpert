@@ -16,7 +16,9 @@ int FtdiInterfaceProvider::load()
 
 #ifndef Q_WS_WIN
     QProcess process;
-    process.start("python", QStringList() << (QFileInfo( QCoreApplication::applicationFilePath() ).filePath()+"/grant_full_access_to_ftdi_devices.py"));
+    QString ds= QCoreApplication::applicationDirPath ();
+    ds =ds.replace("/hardwareexpert","");
+    process.start("python", QStringList() << ( ds+"/grant_full_access_to_ftdi_devices.py"));
     process.waitForFinished ( -1 );
 #endif
 

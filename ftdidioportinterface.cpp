@@ -117,13 +117,17 @@ void FtdiDioPortInterface::setPortMode(int no,IO_MODE mode)
     {
     if(mode == IO_MODE_INPUT)
     {
-        prov.SetBitMode(ports[no],0x00,0x04); // sync bit-bang input mode
+        prov.SetBitMode(ports[no],0x00,0x00);
+        prov.SetBitMode(ports[no],0x00,0x01);
+        prov.SetBaudRate(ports[no],921600);
         bitmodes[no]=0;
     }
     if(mode == IO_MODE_OUTPUT)
      {
-    prov.SetBitMode(ports[no],0xFF,0x04); // sync bit-bang output mode
-            bitmodes[no]=0xFF;
+        prov.SetBitMode(ports[no],0x00,0x00);
+        prov.SetBitMode(ports[no],0xFF,0x01);
+        prov.SetBaudRate(ports[no],921600);
+        bitmodes[no]=0xFF;
     }
     }
 }
@@ -151,19 +155,24 @@ bool FtdiDioPortInterface::open()
         ports.clear();
         bitmodes.clear();
 
+        if(portSerials.length()==0)return false;
+
         foreach (serial,portSerials)
         {
             FT_HANDLE ftH=0;
             FT_STATUS ftStatus=0;
 
             ftStatus = prov.OpenEx((void *)serial.toLocal8Bit().constData(),1,&ftH);
-            ftStatus = prov.SetBitMode(ftH,0x00,0x00); // reset
-            ftStatus = prov.SetBitMode(ftH,0x00,0x04); // sync bit-bang input mode
+            ftStatus = prov.SetBitMode(ftH,0x00,0x00);
+            ftStatus = prov.SetBitMode(ftH,0x00,0x01);
             ftStatus = prov.SetBaudRate(ftH,921600);
 
+            qDebug()<< serial<< ftStatus;
             bitmodes.append(0);
             ports.append(ftH);
         }
+
+        return true;
     }
 
 
