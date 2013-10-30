@@ -8,14 +8,14 @@
 
 class FtdiDioPortInterface : public DirectIOInterface
 {
-    FtdiInterfaceProvider prov;
     QString reasonText;
     QList<QString> portSerials;
     QList<FT_HANDLE> ports;
     QList<unsigned char> bitmodes;
+    FtdiInterfaceProvider * prov;
 
 public:
-    FtdiDioPortInterface();
+    FtdiDioPortInterface(FtdiInterfaceProvider * provider);
 
     bool isAvable();
 

@@ -92,16 +92,15 @@ MainWindow::MainWindow(QWidget *parent) :
     imp->setHexFilesMenager(hfm);
     imp->setConsoleInterfaceMenager(ci);
 
+    onScriptStoped();
+
     driverWindow = new DriverDialog(this);
     driverWindow->setModal(true);
-
-    onScriptStoped();
 
     cis->print("Hardware configuration:\n");
     cis->print("COM port: "+driverWindow->getCurrentComPort()->description()+"\n");
     cis->print("LPT port: "+driverWindow->getCurrentLptPort()->description()+"\n");
     cis->print("I2C port: "+driverWindow->getCurrentI2cPort()->description()+"\n");
-    cis->print("DIO port: "+driverWindow->getCurrentDioPort()->description()+"\n");
 
     optionWindow = new OptionsDialog(this);
     optionWindow->setModal(true);
@@ -322,20 +321,12 @@ void MainWindow::onScriptStoped()
         waitTimer->stop();
         ui->waitLabel->setText(" ");
 
-        if(driverWindow->initComplete)
-        {
-        driverWindow->getCurrentComPort()->close();
-        driverWindow->getCurrentDioPort()->close();
-        driverWindow->getCurrentI2cPort()->close();
-        driverWindow->getCurrentLptPort()->close();
-        }
         ui->pbExecute->setEnabled(true);
         ui->runButton->setEnabled(true);
         ui->stopButton->setEnabled(false);
         ui->menuOptions->setEnabled(true);
         ui->lwApi->setEnabled(true);
         hfm->unLockEditor();
-
 }
 
 
@@ -365,7 +356,6 @@ void MainWindow::on_runButton_clicked()
     itptr->setComPortInterface(driverWindow->getCurrentComPort());
     itptr->setLptPortInterface(driverWindow->getCurrentLptPort());
     itptr->setI2cPortInterface(driverWindow->getCurrentI2cPort());
-    itptr->setDirectIoPortInterface(driverWindow->getCurrentDioPort());
 
     itptr->setScriptPath(codeFileManager->currentCodePath());
 
@@ -500,7 +490,6 @@ void MainWindow::on_pbExecute_clicked()
     itptr->setComPortInterface(driverWindow->getCurrentComPort());
     itptr->setLptPortInterface(driverWindow->getCurrentLptPort());
     itptr->setI2cPortInterface(driverWindow->getCurrentI2cPort());
-    itptr->setDirectIoPortInterface(driverWindow->getCurrentDioPort());
 
     itptr->setScriptPath(codeFileManager->currentCodePath());
 
@@ -630,14 +619,25 @@ void MainWindow::onProgressTimerTick()
 
 void MainWindow::on_actionSearch_String_triggered()
 {
-	HexEditorWidget* v = dynamic_cast<HexEditorWidget*>(ui->twHex->currentWidget());
+    HexEditorWidget* v = dynamic_cast<HexEditorWidget*>(ui->twHex->currentWidget());
     if (v==NULL)return;
     QByteArray br = v->data();
     QByteArray akk;
     int lastAdr=0;
 
+    QProgressDialog * progress = new QProgressDialog(tr("Search..."), tr("Cancel"), 0, br.size(), this);
+    progress->setWindowModality(Qt::WindowModal);
+    progress->show();
+
     for(int i=0;i<=br.count();i++)
     {
+        if (i % 1000 == 0 )
+        {
+            progress->setValue(i);
+            QCoreApplication::processEvents ();
+            if (progress->wasCanceled()) break;
+        }
+
         unsigned char c = br[i];
         if( c >= 0x20 && c <= 0x7E)
         {
@@ -656,16 +656,18 @@ void MainWindow::on_actionSearch_String_triggered()
             akk.clear();
         }
     }
+
+    progress->close();
+    delete progress;
 }
 
 
 
 void MainWindow::on_actionSearch_triggered()
 {
+    SearchDialog * sl = new SearchDialog(this);
     HexEditorWidget* v = dynamic_cast<HexEditorWidget*>(ui->twHex->currentWidget());
-    if (v==NULL)return;
-	
-	SearchDialog * sl = new SearchDialog(this);
+
     sl->setText(ui->twHex->tabText(ui->twHex->currentIndex()));
     sl->setHexEditor(v);
     sl->show();
@@ -673,7 +675,6 @@ void MainWindow::on_actionSearch_triggered()
 
 void MainWindow::on_actionDiff_triggered()
 {
-	if (ui->twHex->count() < 2)return;
     CompairDialog * cd = new CompairDialog(this);
     for(int i=0;i<ui->twHex->count();i++)
     {
@@ -732,8 +733,19 @@ void MainWindow::on_actionFind_all_text_string_16_bit_triggered()
     QByteArray akk;
     int lastAdr=0;
 
+    QProgressDialog * progress = new QProgressDialog(tr("Search..."), tr("Cancel"), 0, br.size(), this);
+    progress->setWindowModality(Qt::WindowModal);
+    progress->show();
+
     for(int i=0;i<=br.count()-1;i=i+2)
     {
+        if (i % 1000 == 0 )
+        {
+            progress->setValue(i);
+            QCoreApplication::processEvents ();
+            if (progress->wasCanceled()) break;
+        }
+
         unsigned char c = br[i];
         unsigned char d = br[i+1];
 
@@ -767,6 +779,9 @@ void MainWindow::on_actionFind_all_text_string_16_bit_triggered()
             akk.clear();
         }
     }
+
+    progress->close();
+    delete progress;
 }
 
 void MainWindow::on_actionImportFile_triggered()

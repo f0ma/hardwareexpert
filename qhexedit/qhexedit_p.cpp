@@ -853,7 +853,13 @@ void QHexEditPrivate::adjust()
     _xPosAscii = _xPosHex + HEXCHARS_IN_LINE * _charWidth + GAP_HEX_ASCII;
 
     // tell QAbstractScollbar, how big we are
-    setMinimumHeight(((_data.size()/16 + 1) * _charHeight) + 5);
+
+    // Qt constrain on widget size, does not allow work with file 16M+
+    // Dirty workaround:
+    int minHeigth = ((_data.size()/16 + 1) * _charHeight) + 5;
+    if (minHeigth >= 16777215) minHeigth = 16777214;
+    setMinimumHeight(minHeigth);
+
     setMinimumWidth(_xPosAscii + (BYTES_PER_LINE * _charWidth));
 
     update();

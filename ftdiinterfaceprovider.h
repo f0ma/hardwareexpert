@@ -38,19 +38,6 @@ typedef struct {
     FT_HANDLE ftHandle;
 } FT_DEVICE_LIST_INFO_NODE;
 
-/*
-FT_STATUS FT_CreateDeviceInfoList(LPDWORD lpdwNumDevs);
-FT_DEVICE_LIST_INFO_NODE * FT_GetDeviceInfoList(FT_DEVICE_LIST_INFO_NODE *pDest,LPDWORD lpdwNumDevs);
-
-FT_STATUS FT_OpenEx(PVOID pArg1,DWORD Flags,FT_HANDLE *pHandle);
-FT_STATUS FT_Close(FT_HANDLE ftHandle);
-
-FT_STATUS FT_Read(FT_HANDLE ftHandle,LPVOID lpBuffer,DWORD dwBytesToRead,LPDWORD lpBytesReturned);
-FT_STATUS FT_Write(FT_HANDLE ftHandle, LPVOID lpBuffer,DWORD dwBytesToWrite,LPDWORD lpBytesWritten);
-
-FT_STATUS FT_SetBaudRate(FT_HANDLE ftHandle,ULONG BaudRate);
-FT_STATUS FT_SetBitMode(FT_HANDLE ftHandle,UCHAR ucMask,UCHAR ucEnable);
-*/
 
 
 class FtdiInterfaceProvider
@@ -58,6 +45,8 @@ class FtdiInterfaceProvider
 
     QLibrary lib;
     bool initOk;
+    QStringList serials;
+    QList <FT_HANDLE> handles;
 public:
 
 static const USHORT FLOW_NONE=0x0000;
@@ -114,6 +103,17 @@ static const USHORT PURGE_TX=2;
     FtdiInterfaceProvider();
     int load();
     void unload();
+
+    int getTotalPortsCount();
+
+    void makeOperate();
+
+    int getOperatePortsCount();
+    FT_HANDLE getPortHandle(int no);
+    QString getPortSerial(int no);
+
+    void makeIdle();
+
     ~FtdiInterfaceProvider();
 };
 

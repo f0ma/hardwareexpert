@@ -26,7 +26,7 @@ bool FtdiDioPortInterface::isAvable()
 
 bool FtdiDioPortInterface::load()
 {
-int l = prov.load();
+int l = prov->load();
 
 if (l==1) return true;
 
@@ -37,12 +37,12 @@ return false;
 
 void FtdiDioPortInterface::unload()
 {
-prov.unload();
+prov->unload();
 }
 
-FtdiDioPortInterface::FtdiDioPortInterface()
+FtdiDioPortInterface::FtdiDioPortInterface(FtdiInterfaceProvider * provider)
 {
-
+	prov = provider;
 }
 
 QStringList FtdiDioPortInterface::getPortList()
@@ -62,7 +62,7 @@ QString FtdiDioPortInterface::getPortName()
 
 int FtdiDioPortInterface::getPortCount()
 {
-    return portSerials.count();
+    return prov->getTotalPortsCount();
 }
 
 void FtdiDioPortInterface::setPortValue(int no,unsigned char value)
@@ -71,7 +71,7 @@ void FtdiDioPortInterface::setPortValue(int no,unsigned char value)
     {
            DWORD readed =0;
            unsigned char data = value;
-           prov.Write(ports[no],&data,1,&readed);
+           prov->Write(prov->getPortHandle(no),&data,1,&readed);
            Q_ASSERT(readed==1);
     }
 }
@@ -82,7 +82,7 @@ unsigned char FtdiDioPortInterface::getPortValue(int no)
     {
            DWORD readed =0;
            unsigned char data = 0x00;
-           prov.Read(ports[no],&data,1,&readed);
+           prov->Read(prov->getPortHandle(no),&data,1,&readed);
            Q_ASSERT(readed==1);
            return data;
     }
@@ -98,14 +98,14 @@ void FtdiDioPortInterface::setPinMode(int no,int pin,IO_MODE mode)
         unsigned char mask = 0xFF;
         mask = mask - (1 << pin);
         bitmodes[no] = bitmodes[no]  & mask;
-        prov.SetBitMode(ports[no],bitmodes[no],0x04);
+        prov->SetBitMode(prov->getPortHandle(no),bitmodes[no],0x04);
     }
     if(mode == IO_MODE_OUTPUT)
      {
         unsigned char mask = 0x0;
         mask = mask + (1 << pin);
         bitmodes[no] = bitmodes[no] | mask;
-        prov.SetBitMode(ports[no],bitmodes[no],0x04);
+        prov->SetBitMode(prov->getPortHandle(no),bitmodes[no],0x04);
 
     }
     }
@@ -113,20 +113,20 @@ void FtdiDioPortInterface::setPinMode(int no,int pin,IO_MODE mode)
 
 void FtdiDioPortInterface::setPortMode(int no,IO_MODE mode)
 {
-    if(no<ports.length())
+    if(no<prov->getOperatePortsCount())
     {
     if(mode == IO_MODE_INPUT)
     {
-        prov.SetBitMode(ports[no],0x00,0x00);
-        prov.SetBitMode(ports[no],0x00,0x01);
-        prov.SetBaudRate(ports[no],921600);
+        prov->SetBitMode(prov->getPortHandle(no),0x00,0x00);
+        prov->SetBitMode(prov->getPortHandle(no),0x00,0x01);
+        prov->SetBaudRate(prov->getPortHandle(no),921600);
         bitmodes[no]=0;
     }
     if(mode == IO_MODE_OUTPUT)
      {
-        prov.SetBitMode(ports[no],0x00,0x00);
-        prov.SetBitMode(ports[no],0xFF,0x01);
-        prov.SetBaudRate(ports[no],921600);
+        prov->SetBitMode(prov->getPortHandle(no),0x00,0x00);
+        prov->SetBitMode(prov->getPortHandle(no),0xFF,0x01);
+        prov->SetBaudRate(prov->getPortHandle(no),921600);
         bitmodes[no]=0xFF;
     }
     }
@@ -134,62 +134,17 @@ void FtdiDioPortInterface::setPortMode(int no,IO_MODE mode)
 
 bool FtdiDioPortInterface::open()
 {
-    DWORD numDevs;
+    prov->makeOperate();
+    bitmodes.clear();
+    int pcount = prov->getOperatePortsCount();
+    for(int i =0;i<pcount;i++) bitmodes.append(0x00);
+    return  pcount > 0;
 
-    if(prov.load()!=1) return false;
-
-    if (prov.CreateDeviceInfoList (&numDevs) == 0 && numDevs >0)
-    {
-        FT_DEVICE_LIST_INFO_NODE * devInfo = (FT_DEVICE_LIST_INFO_NODE*) malloc(sizeof(FT_DEVICE_LIST_INFO_NODE)*numDevs);
-        Q_ASSERT(prov.GetDeviceInfoList(devInfo,&numDevs)==0);
-
-        portSerials.clear();
-
-        for(unsigned int i = 0;i<numDevs;i++)
-        {
-        portSerials.append(devInfo[i].SerialNumber);
-        }
-
-
-        QString serial;
-        ports.clear();
-        bitmodes.clear();
-
-        if(portSerials.length()==0)return false;
-
-        foreach (serial,portSerials)
-        {
-            FT_HANDLE ftH=0;
-            FT_STATUS ftStatus=0;
-
-            ftStatus = prov.OpenEx((void *)serial.toLocal8Bit().constData(),1,&ftH);
-            ftStatus = prov.SetBitMode(ftH,0x00,0x00);
-            ftStatus = prov.SetBitMode(ftH,0x00,0x01);
-            ftStatus = prov.SetBaudRate(ftH,921600);
-
-            qDebug()<< serial<< ftStatus;
-            bitmodes.append(0);
-            ports.append(ftH);
-        }
-
-        return true;
-    }
-
-
-
-    return false;
 }
 
 void FtdiDioPortInterface::close()
 {
-    FT_HANDLE ftH;
-    foreach (ftH,ports)
-    {
-        prov.Close(ftH);
-    }
-
-    ports.clear();
-
+    prov->makeIdle();
 }
 
 

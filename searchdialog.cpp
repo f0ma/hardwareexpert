@@ -18,6 +18,7 @@
 
 #include "searchdialog.h"
 #include "ui_searchdialog.h"
+#include <QProgressDialog>
 
 SearchDialog::SearchDialog(QWidget *parent) :
     QDialog(parent),
@@ -53,6 +54,7 @@ void SearchDialog::on_rbHexMode_clicked()
 
 void SearchDialog::on_pbSearch_clicked()
 {
+
     QByteArray data = editor->data();
     QVector <int> resultsval;
     QByteArray search;
@@ -70,8 +72,19 @@ void SearchDialog::on_pbSearch_clicked()
 
 if(search.size()==0) return;
 
+QProgressDialog * progress = new QProgressDialog(tr("Search..."), tr("Cancel"), 0, data.size(), this);
+progress->setWindowModality(Qt::WindowModal);
+progress->show();
+
     for(int i=0;i<data.size();i++)
     {
+        if (i % 1000 == 0 )
+        {
+            progress->setValue(i);
+            QCoreApplication::processEvents ();
+            if (progress->wasCanceled()) break;
+        }
+
         int j=0;
 
         for(;j<search.size();j++,i++)
@@ -118,6 +131,8 @@ if(search.size()==0) return;
         editor->setExternalHighlight(hl);
     }
 
+    progress->close();
+    delete progress;
 }
 
 void SearchDialog::setText(QString s)

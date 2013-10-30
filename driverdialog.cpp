@@ -48,6 +48,8 @@ DriverDialog::DriverDialog(QWidget *parent) :
     LptWinIODirectIOInterface * wiod = new LptWinIODirectIOInterface();
     wiod->setInterface(wioc);
 
+    FtdiInterfaceProvider * pftdi = new FtdiInterfaceProvider();
+
     interfaces << cCom
                << new ExcComInterface()
                << cLpt
@@ -56,7 +58,7 @@ DriverDialog::DriverDialog(QWidget *parent) :
                << new LptDrvI2cInterface()
                << cDio
                << wiod
-               << new FtdiDioPortInterface();
+               << new FtdiDioPortInterface(pftdi);
 
     AbstractHardwareInterface * i;
 
